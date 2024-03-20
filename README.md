@@ -1,5 +1,7 @@
 #---------------------------#
 # README for pdcomp program #
+# 
+# Original README (needs updating)
 #---------------------------#
 
 Contents:
