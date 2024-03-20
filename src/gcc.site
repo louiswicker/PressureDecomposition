@@ -1,0 +1,16 @@
+# site settings for making cm1 on wof-epyc machines.
+
+OUTPUTOPT = -DNETCDF -DNCFPLUS
+OUTPUTINC = -I/home/louis.wicker/miniconda3/envs/hpc/include 
+
+LINKOPTS = -L/home/louis.wicker/miniconda3/envs/hpc/lib -lnetcdff -lnetcdf -lnetcdf -lmfhdf -ldf -lhdf5_hl -lhdf5 -lcrypto -lcurl -lpthread -lsz -lz -ldl -lm -lzip -lblosc -lzstd -lbz2 -lxml2
+
+#FC   = mpif90
+#OPTS = -ffree-form -ffree-line-length-none -O2 -finline-functions
+#CPP  = cpp -C -P -traditional -Wno-invalid-pp-token -ffreestanding
+#DM   = -DMPI -DHDD
+
+FC   = gfortran
+OPTS = -ffree-form -ffree-line-length-none -O2 -finline-functions -fopenmp
+CPP  = cpp -C -P -traditional -Wno-invalid-pp-token -ffreestanding
+OMP  = -DOPENMP -DHDD
