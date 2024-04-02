@@ -60,7 +60,7 @@
 
     real, dimension(:,:,:),allocatable :: den, rho, th,qv,prs
 
-    real zfac, hradius, zradius
+    real zfac, hradius, zradius, rho_avg
     real tv0, tv1, pavgin
     integer, parameter :: wbc = 1
     integer, parameter :: ebc = 1
@@ -212,17 +212,32 @@
 
     DO k=1,nz
 
+    rho_avg = 0.0
+
     DO j=1,ny
     DO i=1,nx
+
 
         hradius = sqrt((xh(i) - xc)**2 + (yh(j) - yc)**2 )
         zradius = sqrt((zh(k) - zc)**2)
 
         rhs(i,j,k,1) = rho0(k) + rho0(1)/drho * exp( -(hradius/radh)**pow - (zradius/radz)**pow)
-        rhs(i,j,k,2) = rhs(i,j,k,1) - rho0(k)
+
+        rho_avg = rho_avg + rhs(i,j,k,1)
 
     ENDDO
     ENDDO
+    
+    rho_avg = rho_avg / float(nx*ny)
+
+    DO j=1,ny
+    DO i=1,nx
+
+        rhs(i,j,k,2) = g*(rhs(i,j,k,1) - rho_avg)  ! J & R 2015 method
+
+    ENDDO
+    ENDDO
+
     ENDDO
 
 ! Call Horizontal laplacian operator
