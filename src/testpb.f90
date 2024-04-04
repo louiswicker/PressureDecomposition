@@ -1,5 +1,5 @@
 
-    PROGRAM TESTPD
+    PROGRAM TEST_PB
 
     use netcdf
 
@@ -45,7 +45,7 @@
     integer, parameter :: nx = 21
     integer, parameter :: ny = 21
     integer, parameter :: nz = 40
-    integer, parameter :: nv = 6
+    integer, parameter :: nv = 4
 
     integer, parameter :: pow = 4
 
@@ -72,7 +72,7 @@
     integer, parameter :: ebc = 1
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
-    character*7, parameter :: outfile = "test.nc"
+    character*10, parameter :: outfile = "test_Pb.nc"
 
     character*10, dimension(nv) :: var_names
 
@@ -107,18 +107,16 @@
     real, parameter :: cvdrd  = cv/rd
     real, parameter :: cpdrd  = cp/rd
 
-    var_names(1) = "IC_Beta   "
-    var_names(2) = "IC_Dens   "
-    var_names(3) = "Soln_Beta "
-    var_names(4) = "Soln_Pres "
-    var_names(5) = "Soln_BP   "
-    var_names(6) = "xxxxxxx   "
+    var_names(1) = "IC_Buoy   "
+    var_names(2) = "Soln_Pb   "
+    var_names(3) = "VPGF      "
+    var_names(4) = "Beta Sum  "
 
     pii = 4.0*atan(1.0)
 
 !-----------------Read netCDF--------------------
 
-    write(*,*) ' ---> TestPP'
+    write(*,*) ' ---> Test_Pb'
 
     allocate( xh(nx) )
     allocate( yh(ny) )
@@ -244,63 +242,26 @@
 
     ENDDO
     
-!------- Compute 3D state using J & R 2015
+!------- Compute 3D state buoayncy forcing similar to J&R 2015
 
-    write(*,*) ' ---> GetPP: computing full state..'
+    write(*,*) ' ---> TEST_Pb: computing RHS'
 
 ! Calculate buoyancy
 
     DO k=1,nz
 
-    rho_avg = 0.0
-
-    DO j=1,ny
-    DO i=1,nx
-
-
-        hradius = sqrt((xh(i) - xc)**2 + (yh(j) - yc)**2 )
-        zradius = sqrt((zh(k) - zc)**2)
-
-        rhs(i,j,k,1) = rho0(k) - rho0(1)/drho * exp( -(hradius/radh)**pow - (zradius/radz)**pow)  ! J&R pp. 3202
-
-        rho_avg = rho_avg + rhs(i,j,k,1)
-
-    ENDDO
-    ENDDO
-    
-    rho_avg = rho_avg / float(nx*ny)
-
     DO j=1,ny
     DO i=1,nx
 
         hradius = sqrt((xh(i) - xc)**2 + (yh(j) - yc)**2 )
         zradius = sqrt((zh(k) - zc)**2)
 
-      ! rhs(i,j,k,2) = g * dthea * exp( -(hradius/radh)**pow - (zradius/radz)**pow)
-        rhs(i,j,k,2) = - g * (rhs(i,j,k,1) - rho0(k))
+        rhs(i,j,k,1) = g * dthea * exp( -(hradius/radh)**pow - (zradius/radz)**pow)
 
     ENDDO
     ENDDO
 
     ENDDO
-
-! Call Horizontal laplacian operator
-
-    call DELSQH(rhs(1,1,1,1), tmp, dx, dy, nx, ny, nz, 'DENSITY')
-    rhs(:,:,:,3) = -g * tmp(:,:,:) 
-
-! Set boundary conditions for beta=0 at ground, this is a reflective bc
-
-    btri( 1) = btri( 1) - atri( 1) 
-    btri(nz) = btri(nz) - ctri(nz) 
-
-! Solve elliptic system for Beta
-
-    call writemxmn(rhs(1,1,1,3), nx, ny, nz, var_names(3))
-    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,3), tmp)
-    rhs(:,:,:,3) = tmp(:,:,:)
-
-    write(*,*) ' ---> GetPP:  Finished computing BETAs'
 
 ! Compute del(rho0*B) / del_Z
 
@@ -309,16 +270,16 @@
 
 ! Compute vertical gradient of [rho * buoy] first at w-points
 
-      tmpz(1) = rhs(i,j,1,2) ! at ground VPGF = rho * buoy
+      tmpz(1) = rhs(i,j,1,1) ! at ground VPGF = rho * buoy
 
       DO k=2,nz
-        tmpz(k) = (rhs(i,j,k,2) - rhs(i,j,k-1,2)) / dz
+        tmpz(k) = (rhs(i,j,k,1) - rhs(i,j,k-1,1)) / dz
       ENDDO
 
-      tmpz(nz+1) = rhs(i,j,nz,2)  ! at top, VPGF = rho * buoy
+      tmpz(nz+1) = rhs(i,j,nz,1)  ! at top, VPGF = rho * buoy
 
       DO k = 1,nz
-        rhs(i,j,k,4) = 0.5*(tmpz(k+1) + tmpz(k))
+        rhs(i,j,k,2) = 0.5*(tmpz(k+1) + tmpz(k))
       ENDDO
 
     ENDDO
@@ -328,16 +289,9 @@
 
     DO j=1,ny
     DO i=1,nx
-      rhs(i,j, 1,4) = rhs(i,j, 1,4) + atri( 1)*(dz*rhs(i,j, 1,2))  ! setting gradient to buoy
-      rhs(i,j,nz,4) = rhs(i,j,nz,4) - ctri(nz)*(dz*rhs(i,j,nz,2))  ! setting gradient to buoy
+      rhs(i,j, 1,2) = rhs(i,j, 1,2) + atri( 1)*(dz*rhs(i,j, 1,1))  ! setting gradient to buoy
+      rhs(i,j,nz,2) = rhs(i,j,nz,2) - ctri(nz)*(dz*rhs(i,j,nz,1))  ! setting gradient to buoy
     ENDDO
-    ENDDO
-
-    DO k = 1,nz
-
-       atri(k) = mfc(k)*mfe(k)*rhoE(k) / (dz*dz*rho0(k))
-       ctri(k) = mfc(k)*mfe(k+1)*rhoE(k+1) / (dz*dz*rho0(k))
-       btri(k) = - atri(k) - ctri(k)
     ENDDO
 
 ! Set new btri for first and last rows for dpb/dz=0 at ground - von Neuman condition
@@ -347,15 +301,13 @@
 
 ! Solve elliptic system for Pb
 
-    call writemxmn(rhs(1,1,1,3), nx, ny, nz, var_names(3))
-    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,4), tmp)
-    rhs(:,:,:,4) = tmp(:,:,:)
+    call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(3))
+    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,2), tmp)
+    rhs(:,:,:,2) = tmp(:,:,:)
 
-    write(*,*) ' ---> TESTPP --> computed buoyany pressure'
+    write(*,*) ' ---> TEST_Pb --> computed buoyany pressure'
 
-    DO n = 1,4
-      call writemxmn(rhs(1,1,1,n), nx, ny, nz, var_names(n))
-    ENDDO
+    call writemxmn(rhs(1,1,1,2), nx, ny, nz, var_names(2))
 
     write(6,FMT='(" ------------------------------------------------------------")')
     write(*,*)
@@ -365,21 +317,20 @@
     DO j=1,ny
     DO i=1,nx
 
-      tmpz(1) = -rhs(i,j,1,2)
+      tmpz(1) = -rhs(i,j,1,1)
 
       DO k=2,nz
-        tmpz(k) = -(rhs(i,j,k,4) - rhs(i,j,k-1,4)) / dz
+        tmpz(k) = -(rhs(i,j,k,2) - rhs(i,j,k-1,2)) / dz
       ENDDO
-      tmpz(nz+1) = -rhs(i,j,nz,2)
+      tmpz(nz+1) = -rhs(i,j,nz,1)
 
       DO k=1,nz
-        rhs(i,j,k,5) = 0.5*(tmpz(k) + tmpz(k+1))
-        rhs(i,j,k,6) = rhs(i,j,k,5) + rhs(i,j,k,2)
+        rhs(i,j,k,3) = 0.5*(tmpz(k) + tmpz(k+1))
+        rhs(i,j,k,4) = rhs(i,j,k,3) + rhs(i,j,k,1)
       ENDDO
 
     ENDDO
     ENDDO
-
 
 ! Write data to netCDF-format file:
 
@@ -389,7 +340,7 @@
 
     write(*,*) 'GETPP:  After writenc2'
 
-    END PROGRAM TESTPD
+    END PROGRAM TEST_Pb
 
 !=========================================================
 !

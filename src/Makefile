@@ -37,8 +37,8 @@ pdcomp :    $(OBFILES)
 testbeta:   $(OBFILES) testbeta.o
 		$(F90) $(FOPTS) -o testbeta.exe testbeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
-testpd:     $(OBFILES2)
-		$(F90) $(FOPTS) -o testpd.exe $(OBFILES2) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+testpb:     $(OBFILES) testpb.o
+		$(F90) $(FOPTS) -o testpb.exe testpb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
 getpp.o:    getpp.f90
 		$(F90) -c $(FOPTS) getpp.f90 $(NCINC) $(NCLIB)
@@ -46,7 +46,7 @@ getpp.o:    getpp.f90
 testbeta.o:   testbeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-testpd.o:   testpd.f90
+testpb.o:   testpb.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 bc.o:       bc.f90
@@ -59,4 +59,4 @@ pdcomp.o:	pdcomp.f90
 		$(F90) -c $(FOPTS) pdcomp.f90 
 
 clean:
-		rm -rf *o *mod
+		rm -rf *.o *.mod *.exe

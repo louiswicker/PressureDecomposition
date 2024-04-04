@@ -72,7 +72,7 @@
     integer, parameter :: ebc = 1
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
-    character*7, parameter :: outfile = "test.nc"
+    character*12, parameter :: outfile = "test_beta.nc"
 
     character*10, dimension(nv) :: var_names
 
