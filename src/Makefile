@@ -22,7 +22,7 @@ NCLIB=${LINKOPTS}
 #################################################################################
 
 OBFILES = getpp.o bc.o singleton.o pdcomp.o
-OBFILES2  = testpp.o bc.o singleton.o pdcomp.o
+OBFILES2  = testpd.o bc.o singleton.o pdcomp.o
 OUTPUTOPT = -DNETCDF
 LINKOPTS  = -lnetcdff
 
@@ -41,8 +41,8 @@ testpd:     $(OBFILES2)
 getpp.o:    getpp.f90
 		$(F90) -c $(FOPTS) getpp.f90 $(NCINC) $(NCLIB)
 
-testpp.o:   testpp.f90
-		$(F90) -c $(FOPTS) testpp.f90 $(NCINC) $(NCLIB)
+testpd.o:   testpd.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 bc.o:       bc.f90
 		$(F90) -c $(FOPTS) bc.f90 
