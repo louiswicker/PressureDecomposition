@@ -211,12 +211,12 @@
     enddo
     enddo
 
-    DO j=jpb,jpe
-    DO i=ipb,ipe
-      deft(i,j, 1) = rhs3d(i,j, 1) + atri( 1)*rhs3d(i,j, 1)  ! reflective bc 
-      deft(i,j,nk) = rhs3d(i,j,nk) + ctri(nk)*rhs3d(i,j,nk)
-    ENDDO
-    ENDDO
+!   DO j=jpb,jpe
+!   DO i=ipb,ipe
+!     deft(i,j, 1) = rhs3d(i,j, 1) + atri( 1)*rhs3d(i,j, 1)  ! reflective bc 
+!     deft(i,j,nk) = rhs3d(i,j,nk) + ctri(nk)*rhs3d(i,j,nk)
+!   ENDDO
+!   ENDDO
 
 !-----------------------------------------------------------------------
 !  p solver
@@ -279,9 +279,9 @@
   DO i=ipb,ipe
 
     do k=1,nk
-      diag(k)=2.0d0*( dcos(2.0d0*dpi*dble(i-1)/dble(ipe))          &
-                    +dcos(2.0d0*dpi*dble(j-1)/dble(jpe))          &
-                    -2.0d0)/(dx*dx) - atri(k) - ctri(k)
+      diag(k)=2.0d0*( dcos(2.0d0*dpi*dble(i-1)/dble(ipe))                 &
+                    + dcos(2.0d0*dpi*dble(j-1)/dble(jpe)) -2.0d0)/(dx*dx) &
+                    + btri(k)
     enddo
 
     if(i.eq.1.and.j.eq.1)then   ! know the solution at the top corner p_nh = 0.0

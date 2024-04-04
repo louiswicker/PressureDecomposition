@@ -21,8 +21,7 @@ NCLIB=${LINKOPTS}
 # YOU PROBABLY DON'T WANT TO CHANGE ANYTHING BELOW THIS                         #
 #################################################################################
 
-OBFILES = getpp.o bc.o singleton.o pdcomp.o
-OBFILES2  = testpd.o bc.o singleton.o pdcomp.o
+OBFILES = bc.o singleton.o pdcomp.o
 OUTPUTOPT = -DNETCDF
 LINKOPTS  = -lnetcdff
 
@@ -33,13 +32,19 @@ FOPTS = -g -O0 -fbacktrace -fcheck=all -Wall -Wno-unused-parameter
 #################################################################################
 
 pdcomp :    $(OBFILES)
-		$(F90) $(FOPTS) -o ../run/pdcomp.exe $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+		$(F90) $(FOPTS) -o ../run/pdcomp.exe $<.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+
+testbeta:   $(OBFILES) testbeta.o
+		$(F90) $(FOPTS) -o testbeta.exe testbeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
 testpd:     $(OBFILES2)
 		$(F90) $(FOPTS) -o testpd.exe $(OBFILES2) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
 getpp.o:    getpp.f90
 		$(F90) -c $(FOPTS) getpp.f90 $(NCINC) $(NCLIB)
+
+testbeta.o:   testbeta.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 testpd.o:   testpd.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
