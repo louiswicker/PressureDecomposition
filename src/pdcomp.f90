@@ -211,6 +211,13 @@
     enddo
     enddo
 
+    DO j=jpb,jpe
+    DO i=ipb,ipe
+      deft(i,j, 1) = rhs3d(i,j, 1) + atri( 1)*rhs3d(i,j, 1)  ! reflective bc 
+      deft(i,j,nk) = rhs3d(i,j,nk) + ctri(nk)*rhs3d(i,j,nk)
+    ENDDO
+    ENDDO
+
 !-----------------------------------------------------------------------
 !  p solver
 
@@ -265,20 +272,6 @@
       deft(i,j,k)=trans(i,j)
     ENDDO
     ENDDO
-
-    IF( k .eq. 1 ) THEN
-      DO j=jpb,jpe
-      DO i=ipb,ipe
-        deft(i,j,1)=trans(i,j) - atri(1)*trans(i,j)
-      ENDDO
-      ENDDO
-    ELSEIF( k .eq. nk ) THEN
-      DO j=jpb,jpe
-      DO i=ipb,ipe
-        deft(i,j,nk)=trans(i,j) - ctri(nk)*trans(i,j)
-      ENDDO
-      ENDDO
-    ENDIF
 
   ENDDO
 
