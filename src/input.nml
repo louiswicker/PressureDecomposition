@@ -1,0 +1,21 @@
+!----------------------------!
+!  Input for pdcomp          !
+!----------------------------!
+
+&inputs
+  infile = './beta_in.nc',  ! Filepath for CM1 output
+  outfile = './beta_out.nc', ! Filepath for pdcomp output
+
+  ! Grid information
+  nx = 21    ! Number of x-grid points in domain
+  ny = 21    ! Number of y-grid points in domain
+  nz = 40    ! Number of z-grid points in domain
+
+  ! Boundary conditions:   1 = periodic ;   2 = open ;   3 = rigid wall
+  wbc = 1    ! West boundary condition
+  ebc = 1    ! East boundary condition
+  sbc = 1    ! South boundary condition
+  nbc = 1    ! North boundary condition
+ 
+/
+

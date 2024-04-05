@@ -21,18 +21,18 @@ NCLIB=${LINKOPTS}
 # YOU PROBABLY DON'T WANT TO CHANGE ANYTHING BELOW THIS                         #
 #################################################################################
 
-OBFILES = bc.o singleton.o pdcomp.o
+OBFILES = bc.o singleton.o pdcomp.o array_utils.o ncdf_utils.o
 OUTPUTOPT = -DNETCDF
 LINKOPTS  = -lnetcdff
 
 FOPTS = -O2 -fcheck=bounds -Wno-unused-parameter 
 
-FOPTS = -g -O0 -fbacktrace -fcheck=all -Wall -Wno-unused-parameter 
+FOPTS = -g -O0 -fbacktrace -fcheck=all -w -Wall -Wno-unused-parameter 
 
 #################################################################################
 
-pdcomp :    $(OBFILES)
-		$(F90) $(FOPTS) -o ../run/pdcomp.exe $<.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+retrievebeta:   $(OBFILES) retrievebeta.o
+		$(F90) $(FOPTS) -o retrievebeta.exe retrievebeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
 testbeta:   $(OBFILES) testbeta.o
 		$(F90) $(FOPTS) -o testbeta.exe testbeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
@@ -40,13 +40,19 @@ testbeta:   $(OBFILES) testbeta.o
 testpb:     $(OBFILES) testpb.o
 		$(F90) $(FOPTS) -o testpb.exe testpb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
-getpp.o:    getpp.f90
-		$(F90) -c $(FOPTS) getpp.f90 $(NCINC) $(NCLIB)
+retrievebeta.o:   retrievebeta.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 testbeta.o:   testbeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 testpb.o:   testpb.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
+
+array_utils.o: array_utils.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
+
+ncdf_utils.o:  ncdf_utils.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 bc.o:       bc.f90
