@@ -23,19 +23,26 @@
   !       nbc = north boundary condition
 
   ! The code computes effective buoyancy using the Davies-Jones (2003)
-  ! Jeevanjee & Romps (2015) formulation
+  ! Jeevanjee & Romps (2015) formulation from the 3D/4D density field.
+
+
+  ! This code has been modified to solve for CM1 and FV3-SOLO.  This
+  ! requires (due to vertical grid in FV3) a 4D height array. This
+  ! complicates a few things.  However, I have choosen to keep the
+  ! rest of the vertical coordinates 3D to keep it readable as the
+  ! coefficients are only needed as temporarys within the time loop.
 
 !-----------------------------------------------------------------------
-    integer, parameter :: nv = 4
 
-    real, dimension(:,:,:,:),allocatable :: rhs
+    real, dimension(:,:,:,:),allocatable :: rhs, soln
 
     integer  :: i,j,k,n
 
-    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe
+    real, dimension(:),       allocatable :: xh, yh, time
+    real, dimension(:,:,:,:), allocatable :: zh
 
-    real, dimension(:,:,:),allocatable :: tmp 
-    real, dimension(:),    allocatable :: atri, btri, ctri, tmpz
+    real, dimension(:,:,:),   allocatable :: zf, mfe, mfe, tmp 
+    real, dimension(:),       allocatable :: atri, btri, ctri, tmpz
 
     integer :: wbc, ebc, sbc, nbc 
     integer :: nx, ny, nz
@@ -48,7 +55,7 @@
 
     character*10, dimension(nv) :: var_names
 
-    namelist /inputs/ infile,outfile,nx,ny,nz,wbc,ebc,sbc,nbc
+    namelist /inputs/ infile,outfile,nt,nx,ny,nz,wbc,ebc,sbc,nbc
 
 !----------------- 3D field names for output netCDF4 file --------------------!
 
@@ -66,6 +73,7 @@
     write(*,*) ' ---> Retrieve_Beta:  Namelist variables:'
     write(*,*) '   infile      = ',infile
     write(*,*) '   outfile     = ',outfile
+    write(*,*) '   nt          = ',nt
     write(*,*) '   nx          = ',nx
     write(*,*) '   ny          = ',ny
     write(*,*) '   nz          = ',nz
@@ -78,97 +86,110 @@
 
     allocate( xh(nx) )
     allocate( yh(ny) )
-    allocate( zh(nz) )
-    allocate( mfc(nz) )
-    allocate( zf(nz+1) )
-    allocate( mfe(nz+1) )
+    allocate( zh(nx,ny,nz,nt) )
+    allocate( mfc(nx,ny,nz) )
+    allocate( zf(nx,ny,nz+1) )
+    allocate( mfe(nx,ny,nz+1) )
 
 ! Tridiagonal coefficients
 
-    allocate( atri(nz+1) )
-    allocate( btri(nz) )
-    allocate( ctri(nz+1) )
-    allocate( tmpz(nz+1) )
+    allocate( atri(nx,ny,nz+1) )
+    allocate( btri(nx,ny,nz  ) )
+    allocate( ctri(nx,ny,nz+1) )
+    allocate( tmpz(nx,ny,nz+1) )
 
-! 3D arrays for solution
+! 4D arrays for forcing, temporary, and solution
 
-    allocate( tmp(nx,ny,nz) )
+    allocate( tmp (nx,ny,nz) )
+    allocate( rhs (nx,ny,nz,nt) )
+    allocate( soln(nx,ny,nz,nt) )
 
-    allocate( rhs(nx,ny,nz,nv) )
-
-    tmp(:,:,:)   = 0.0
-    rhs(:,:,:,:) = 0.0
+    tmp (:,:,:)   = 0.0
+    rhs (:,:,:,:) = 0.0
+    soln(:,:,:,:) = 0.0
 
 !----------------- Read 3D density from input netCDF4 file --------------------!
 
     write(*,*) ' ---> Retrieve_Beta: Reading in 3D density'
 
-    CALL READNC2( infile, nx, ny, nz, xh, yh, zh, tmp ) 
+    CALL READNC2( infile, nt, nx, ny, nz, xh, yh, zh, rhs ) 
 
-    rhs(:,:,:,1) = tmp
+! assume constant grid in horizontal
 
-    write(6,*) xh
-
-    write(*,*) ' ---> Retrieve_Beta: Read in 3D density'
-
-    zf(1) = 0.0
-
-    DO k=2,nz+1
-      zf(k) = 2.0*zh(k-1) - zf(k-1)
-    ENDDO
-
-    DO k=1,nz
-      mfc(k) = 1.0 / (zf(k+1) - zf(k))
-    ENDDO
-
-    DO k=2,nz
-      mfe(k) = 1.0 / (zh(k) - zh(k-1))
-    ENDDO
-
-    mfe(1)    = mfe(2)
-    mfe(nz+1) = mfe(nz)
-
-    dx = xh(2) - xh(1)   ! assume constant grid in horizontal
+    dx = xh(2) - xh(1)   
     dy = yh(2) - yh(1)
+
+! DO a time loop....
+
+    DO n = 1,nt
+
+      write(6,*) xh
+
+      write(*,*) ' ---> Retrieve_Beta: Read in 3D density'
+
+      zf(:,:,:) = 0.0
+
+      DO j = 1,ny
+      DO i = 1,nx
+
+        DO k=2,nz+1
+          zf(i,j,k) = 2.0*zh(i,j,k-1,n) - zf(i,j,k-1,n)
+        ENDDO
+
+        DO k=1,nz
+          mfc(i,j,k) = 1.0 / (zf(i,j,k+1,n) - zf(i,j,k,n))
+        ENDDO
+
+        DO k=2,nz
+          mfe(i,j,k) = 1.0 / (zh(i,j,k,n) - zh(i,j,k-1,n))
+        ENDDO
+
+        mfe(i,j,1)    = mfe(i,j,2)
+        mfe(i,j,nz+1) = mfe(i,j,nz)
 
 ! Compute tridiagonal coefficients for pressure/density formulation
 
-    DO k = 1,nz
+        DO k = 1,nz
 
-       atri(k) = mfc(k)*mfe(k) 
-
-       ctri(k) = mfc(k)*mfe(k+1) 
-
-       btri(k) = - atri(k) - ctri(k)
-
-    ENDDO
+           atri(i,j,k) = mfc(i,j,k)*mfe(i,j,k) 
     
-! Call Horizontal laplacian operator
+           ctri(i,j,k) = mfc(i,j,k)*mfe(i,j,k+1) 
 
-    write(*,*) ' ---> Retrieve_Beta: computing laplacian of density'
+           btri(i,j,k) = - atri(i,j,k) - ctri(i,j,k)
 
-    call DELSQH(rhs(1,1,1,1), tmp, dx, dy, nx, ny, nz)
-
-    call writemxmn(tmp, nx, ny, nz, 'DEL^2 DENSITY')
-
-    rhs(:,:,:,2) = -g * tmp(:,:,:)
+        ENDDO
 
 ! Set boundary conditions for beta=0 at ground, this is a reflective bc
 
-    btri( 1) = btri( 1) - atri( 1) 
-    btri(nz) = btri(nz) - ctri(nz) 
+        btri(i,j, 1) = btri(i,j, 1) - atri(i,j, 1) 
+        btri(i,j,nz) = btri(i,j,nz) - ctri(i,j,nz) 
+
+      ENDDO
+      ENDDO
+
+    
+! Call Horizontal laplacian operator
+
+      write(*,*) ' ---> Retrieve_Beta: computing laplacian of density'
+
+      call DELSQH(rhs(1,1,1,n), tmp, dx, dy, nx, ny, nz)
+
+      call writemxmn(tmp, nx, ny, nz, 'DEL^2 DENSITY')
+
+      tmp(:,:,:) = -g * tmp(:,:,:)
+
 
 ! Solve elliptic system for Beta
 
     write(*,*) ' ---> Retrieve_Beta: Ready to solve elliptic system'
 
-    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,2), tmp)
+    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,n), tmp)
 
-    rhs(:,:,:,2) = tmp(:,:,:)
+    soln(:,:,:,n) = tmp(:,:,:)
 
     write(*,*) ' ---> Retrieve_Beta:  Finished computing BETA'
 
-    call writemxmn(rhs(1,1,1,2), nx, ny, nz, var_names(2))
+    call writemxmn(soln(1,1,1,n), nx, ny, nz, var_names(2))
 
     write(6,FMT='(" ------------------------------------------------------------")')
     write(*,*)
@@ -177,7 +198,7 @@
 
     write(*,*) ' ---> Retrieve_Beta::  Writing netCDF4 to outfile'
 
-    call writenc2(outfile, nx, ny, nz, 2, xh, yh, zh, rhs, var_names)
+    call writenc2(outfile, nt, nx, ny, nz, time, xh, yh, zh, soln, var_names(2))
 
     write(*,*) ' ---> Retrieve_Beta::  Wrote netCDF4 to outfile'
 

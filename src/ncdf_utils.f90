@@ -108,20 +108,19 @@
 !
 !===========================================================
 
-    SUBROUTINE READNC2( filename, nx, ny, nz, xc, yc, zc, den ) 
+    SUBROUTINE READNC2( filename, nt, nx, ny, nz, xc, yc, zc, den ) 
 
     use netcdf
 
     implicit none
 
-    integer, intent(in) :: nx, ny, nz
+    integer, intent(in) :: nt, nx, ny, nz
     character(len=100), intent(in) :: filename
 
     real, dimension(nx), intent(out) :: xc
     real, dimension(ny), intent(out) :: yc
-    real, dimension(nz), intent(out) :: zc
 
-    real, dimension(nx,ny,nz),   intent(out) :: den
+    real, dimension(nt,nx,ny,nz), intent(out) :: den, zc
 
     integer :: k
     integer :: varid, ncid, status
@@ -134,8 +133,11 @@
 
 !----------Get 1D variables needed from netcdf----------------
 
+    status = nf90_inq_varid(ncid,"time",varid)
+    status = nf90_get_var(ncid,varid,time,start=(/1/),count=(/nt/))
+
     status = nf90_inq_varid(ncid,"zh",varid)
-    status = nf90_get_var(ncid,varid,zc,start=(/1/),count=(/nz/))
+    status = nf90_get_var(ncid,varid,zc,start=(/1/),count=(/nx,ny,nz,nt/))
 
     status = nf90_inq_varid(ncid,"yh",varid)
     status = nf90_get_var(ncid,varid,yc,start=(/1/),count=(/ny/))
@@ -151,7 +153,7 @@
         write(*,*) ' ----> Retrieve_Beta/READNC2: No 3D density in file, stopping'
         stop 999
     ELSE
-      status = nf90_get_var(ncid,varid,den,start=(/1,1,1,1/),count=(/nx,ny,nz,1/))
+      status = nf90_get_var(ncid,varid,den,start=(/1,1,1,1/),count=(/nx,ny,nz,nt/))
     ENDIF
 
 !------------------Close netCDF----------------------------

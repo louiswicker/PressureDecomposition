@@ -224,7 +224,7 @@
        rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
     ENDDO
 
-    rhoE(1)    = rho0(1)  ! These depend on boundary condition
+    rhoE(1)    = rho0(1)  ! These need to be set for the boundary conditions
     rhoE(nz+1) = rho0(nz)
 
     DO k = 1,nz

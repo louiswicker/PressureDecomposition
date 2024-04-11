@@ -73,7 +73,7 @@
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
 
-    character*12, parameter :: outfile = "test_out.nc"
+    character*12, parameter :: outfile = "beta_test_out.nc"
     character*10, parameter :: testfile = "beta_in.nc   "
 
     character*10, dimension(nv) :: var_names
@@ -269,9 +269,10 @@
 ! Call Horizontal laplacian operator
 
     call DELSQH(rhs(1,1,1,1), tmp, dx, dy, nx, ny, nz, 'DENSITY')
+
     rhs(:,:,:,2) = -g * tmp(:,:,:) 
 
-! Set boundary conditions for beta=0 at ground, this is a reflective bc
+! Set boundary conditions for beta=0 at ground - reflective boundary condition.
 
     btri( 1) = btri( 1) - atri( 1) 
     btri(nz) = btri(nz) - ctri(nz) 
@@ -279,12 +280,16 @@
 ! Solve elliptic system for Beta
 
     call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(1))
+
+    write(*,*) ' ---> TEST_BETA:  Solving elliptic system'
+
     call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,2), tmp)
+
     rhs(:,:,:,2) = tmp(:,:,:)
 
-    write(*,*) ' ---> TEST_BETA:  Finished computing BETAs'
-
     call writemxmn(rhs(1,1,1,2), nx, ny, nz, var_names(2))
+
+    write(*,*) ' ---> TEST_BETA:  Solution to elliptic system finished'
 
     write(6,FMT='(" ------------------------------------------------------------")')
     write(*,*)
