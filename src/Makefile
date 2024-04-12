@@ -1,5 +1,5 @@
 #---------------------#
-# Makefile for pdcomp #
+# Makefile for retrieving pressure from cloud models
 #---------------------#
 #  Config variables   #
 
@@ -21,7 +21,7 @@ NCLIB=${LINKOPTS}
 # YOU PROBABLY DON'T WANT TO CHANGE ANYTHING BELOW THIS                         #
 #################################################################################
 
-OBFILES = bc.o singleton.o pdcomp.o array_utils.o ncdf_utils.o
+OBFILES = bc.o singleton.o solve_ellip.o array_utils.o ncdf_utils.o
 OUTPUTOPT = -DNETCDF
 LINKOPTS  = -lnetcdff
 
@@ -61,8 +61,8 @@ bc.o:       bc.f90
 singleton.o:   singleton.f90
 		$(F90) -c $(FOPTS) singleton.f90 
 
-pdcomp.o:	pdcomp.f90
-		$(F90) -c $(FOPTS) pdcomp.f90 
+solve_ellip.o:	solve_ellip.f90
+		$(F90) -c $(FOPTS) solve_ellip.f90 
 
 clean:
 		rm -rf *.o *.mod *.exe

@@ -56,7 +56,6 @@
 
     output(:,:,:) = 0.0
 
-    call writemxmn(input, nx, ny, nz, 'DEL^2')
     write(6,*) dx, dy
 
     DO k=1,nz   ! outer loop

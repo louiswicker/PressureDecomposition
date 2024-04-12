@@ -3,13 +3,14 @@
 !----------------------------!
 
 &inputs
-  infile = './test_data.nc',  ! Filepath for CM1 output
+  infile = './cm1_3D.nc',  ! Filepath for CM1 output
   outfile = './cm1_beta_out.nc', ! Filepath for pdcomp output
 
   ! Grid information
-  nx = 64    ! Number of x-grid points in domain
-  ny = 64    ! Number of y-grid points in domain
+  nx = 63    ! Number of x-grid points in domain
+  ny = 63    ! Number of y-grid points in domain
   nz = 60    ! Number of z-grid points in domain
+  nt = 60
 
   ! Boundary conditions:   1 = periodic ;   2 = open ;   3 = rigid wall
   wbc = 1    ! West boundary condition

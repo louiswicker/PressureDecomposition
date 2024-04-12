@@ -6,21 +6,22 @@
 !===========================================================
 
 
-    SUBROUTINE WRITENC2(filename, nx, ny, nz, nv, x, y, z, vars, labels)
+    SUBROUTINE WRITENC2(filename, nt, nx, ny, nz, x, y, z, time, var, label)
 
     USE netcdf
 
     implicit none
  
     character(len=*),          intent(in) :: filename
-    integer,                   intent(in) :: nx, ny, nz, nv
+    integer,                   intent(in) :: nx, ny, nz, nt
 
-    real, dimension(nx,ny,nz,nv), intent(in) :: vars
+    real, dimension(nx,ny,nz,nt), intent(in) :: var
     real, dimension(nx), intent(in)          :: x
     real, dimension(ny), intent(in)          :: y
     real, dimension(nz), intent(in)          :: z
+    real, dimension(nt), intent(in)          :: time
 
-    character(len=10), dimension(nv), intent(in) :: labels
+    character(len=10),   intent(in)          :: label
 
 ! Local declarations
 
@@ -30,7 +31,7 @@
     integer :: nxDimID, nyDimID, nzDimID, ntDimID
     integer ::  xVarID,  yVarID,  zVarID,  tVarID
 
-    integer, dimension(nv) :: VarID
+    integer :: VarID
 
     real, dimension(nx,ny,nz) :: tmp
 
@@ -51,7 +52,7 @@
     status = nf90_def_dim(ncid,"nz",nz,nzDimID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
-    status = nf90_def_dim(ncid,"time",1,ntDimID)
+    status = nf90_def_dim(ncid,"time",nt,ntDimID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
     status = nf90_def_var(ncid,"xh",nf90_float,(/nxDimID/), xVarID)
@@ -63,13 +64,12 @@
     status = nf90_def_var(ncid,"zh",nf90_float,(/nzDimID/), zVarID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
-    DO n = 1,nv
+    status = nf90_def_var(ncid,"time",nf90_float,(/ntDimID/), tVarID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
-      status = nf90_def_var(ncid,labels(n),nf90_float, &
-                           (/nxDimID,nyDimID,nzDimID/),VarID(n))
-      if(status /= nf90_NoErr) write(*,*) labels(n), nf90_strerror(status)
-
-    ENDDO
+    status = nf90_def_var(ncid,label,nf90_float, &
+                           (/nxDimID,nyDimID,nzDimID,ntDimID/),VarID)
+    if(status /= nf90_NoErr) write(*,*) label, nf90_strerror(status)
 
     status = nf90_enddef(ncid)
 
@@ -86,14 +86,11 @@
     status = nf90_put_var(ncid, zVarID, z)
     if(status /= nf90_NoErr) write(*,*) 'Z-COORD: ', nf90_strerror(status)
 
-    DO n = 1,nv
+    status = nf90_put_var(ncid, tVarID, time)
+    if(status /= nf90_NoErr) write(*,*) 'TIME-COORD: ', nf90_strerror(status)
 
-      tmp(:,:,:) = vars(:,:,:,n)
-
-      status = nf90_put_var(ncid, VarID(n), tmp)
-      if(status /= nf90_NoErr) write(*,*) labels(n), nf90_strerror(status)
-
-    ENDDO
+    status = nf90_put_var(ncid, VarID, var)
+    if(status /= nf90_NoErr) write(*,*) label, nf90_strerror(status)
 
     status = nf90_close(ncid)
 
@@ -108,7 +105,7 @@
 !
 !===========================================================
 
-    SUBROUTINE READNC2( filename, nt, nx, ny, nz, xc, yc, zc, den ) 
+    SUBROUTINE READNC2( filename, nt, nx, ny, nz, xc, yc, zc, time, den ) 
 
     use netcdf
 
@@ -119,6 +116,7 @@
 
     real, dimension(nx), intent(out) :: xc
     real, dimension(ny), intent(out) :: yc
+    real, dimension(nt), intent(out) :: time
 
     real, dimension(nt,nx,ny,nz), intent(out) :: den, zc
 
@@ -162,3 +160,112 @@
 
     RETURN
     END SUBROUTINE READNC2
+
+!===========================================================
+!
+!   READNC4_DIMS (simple netCDF4 read utility to return dims)
+!
+!===========================================================
+
+    SUBROUTINE READ_NC4_DIMS( filename, nt, nx, ny, nz )
+
+    use netcdf
+
+    implicit none
+ 
+    integer, intent(out) :: nt, nx, ny, nz
+    character(len=100), intent(in) :: filename
+ 
+    integer :: status, ncid, dimid
+ 
+!------------------Open netCDF-----------------------------
+ 
+    status = nf90_open(trim(filename),nf90_nowrite,ncid)
+ 
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+ 
+! Read NT (unlimited dimension)
+ 
+    status = nf90_inquire(ncid, unlimiteddimid = nt)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+! Read NZ
+ 
+    status = nf90_inq_dimid( ncid, "nz", dimid )
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+    status = nf90_inquire_dimension(ncid, dimid, len = nx)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+! Read NY
+ 
+    status = nf90_inq_dimid( ncid, "ny", dimid )
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+    status = nf90_inquire_dimension(ncid, dimid, len = ny)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+! READ NX
+
+    status = nf90_inq_dimid( ncid, "nx", dimid )
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+    status = nf90_inquire_dimension(ncid, dimid, len = nx)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+
+    status = nf90_close(ncid)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+    WRITE(6,*) nx, ny, nz, nt
+
+    RETURN
+    END SUBROUTINE READ_NC4_DIMS
+
+!===========================================================
+!
+!   READ_NC4_ATTR (simple netCDF4 utility to read global attrs)
+!
+!===========================================================
+
+    SUBROUTINE READ_NC4_ATT( filename, wbc, ebc, sbc, nbc )
+
+    use netcdf
+
+    implicit none
+ 
+    integer, intent(out) :: wbc, ebc, sbc, nbc
+    character(len=100), intent(in) :: filename
+ 
+    integer :: status, ncid, dimid
+ 
+!------------------Open netCDF-----------------------------
+ 
+    status = nf90_open(trim(filename),nf90_nowrite,ncid)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+ 
+! Read WBC 
+ 
+    status = nf90_get_att(ncid, NF90_GLOBAL, "wbc", wbc)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+! Read EBC
+ 
+    status = nf90_get_att(ncid, NF90_GLOBAL, "ebc", ebc)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+! Read SBC
+ 
+    status = nf90_get_att(ncid, NF90_GLOBAL, "sbc", sbc)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+! Read NBC
+ 
+    status = nf90_get_att(ncid, NF90_GLOBAL, "nbc", nbc)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+
+! Close file
+ 
+    status = nf90_close(ncid)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+ 
+    WRITE(6,*) wbc, ebc, sbc, nbc
+
+    RETURN
+    END SUBROUTINE READ_NC4_ATT
