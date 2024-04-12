@@ -55,7 +55,7 @@
 
     character*10    :: var_names
 
-    namelist /inputs/ infile,outfile,nt,nx,ny,nz,wbc,ebc,sbc,nbc
+    namelist /inputs/ infile,outfile
 
 !----------------- 3D field names for output netCDF4 file --------------------!
 
@@ -68,15 +68,15 @@
     open(8,file='input.nml')
     read(8,nml=inputs)
 
-    write(*,*)
-    write(*,*) ' ---> Retrieve_Beta:  Namelist variables:'
-    write(*,*) '   infile      = ',infile
-    write(*,*) '   outfile     = ',outfile
 
     CALL READ_NC4_DIMS( infile, nt, nx, ny, nz )
 
     CALL READ_NC4_ATT( infile, wbc, ebc, sbc, nbc )
 
+    write(*,*)
+    write(*,*) ' ---> Retrieve_Beta:  Input parameters\n'
+    write(*,*) '   infile      = ',infile
+    write(*,*) '   outfile     = ',outfile
     write(*,*) '   nt          = ',nt
     write(*,*) '   nx          = ',nx
     write(*,*) '   ny          = ',ny
@@ -116,9 +116,7 @@
 
     write(*,*) ' ---> Retrieve_Beta: Reading in 3D density'
 
-    CALL READ_NC4_DIMS( infile, nt, nx, ny, nz )
-
-    CALL READNC2( infile, nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
+    CALL READ_NC4_FILE( infile, nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
 
     write(*,*) ' ---> Retrieve_Beta: Read in 3D density'
 
@@ -206,7 +204,7 @@
 
     write(*,*) ' ---> Retrieve_Beta::  Writing netCDF4 to outfile'
 
-    call writenc2(outfile, nt, nx, ny, nz, xh, yh, zh, time, soln, var_names)
+    call WRITE_NC4_FILE(outfile, nt, nx, ny, nz, xh, yh, zh, time, soln, var_names)
 
     write(*,*) ' ---> Retrieve_Beta::  Wrote netCDF4 to outfile'
 

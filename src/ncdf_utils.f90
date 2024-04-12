@@ -1,12 +1,12 @@
 
 !===========================================================
 !
-!   WRITENC2 (simple netCDF4 write utility)
+!   WRITE_NC4_FILE (simple netCDF4 write utility)
 !
 !===========================================================
 
 
-    SUBROUTINE WRITENC2(filename, nt, nx, ny, nz, x, y, z, time, var, label)
+    SUBROUTINE WRITE_NC4_FILE(filename, nt, nx, ny, nz, x, y, z, time, var, label)
 
     USE netcdf
 
@@ -97,15 +97,15 @@
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
     RETURN
-    END SUBROUTINE WRITENC2
+    END SUBROUTINE WRITE_NC4_FILE
 
 !===========================================================
 !
-!   READNC2 (simple netCDF4 read utility)
+!   READ_NC4_FILE (simple netCDF4 read utility)
 !
 !===========================================================
 
-    SUBROUTINE READNC2( filename, nt, nx, ny, nz, xc, yc, zc, time, den ) 
+    SUBROUTINE READ_NC4_FILE( filename, nt, nx, ny, nz, xc, yc, zc, time, den ) 
 
     use netcdf
 
@@ -159,11 +159,11 @@
     status = nf90_close(ncid)
 
     RETURN
-    END SUBROUTINE READNC2
+    END SUBROUTINE READ_NC4_FILE
 
 !===========================================================
 !
-!   READNC4_DIMS (simple netCDF4 read utility to return dims)
+!   READ_NC4_DIMS (simple netCDF4 read utility to return dims)
 !
 !===========================================================
 
@@ -186,14 +186,16 @@
  
 ! Read NT (unlimited dimension)
  
-    status = nf90_inquire(ncid, unlimiteddimid = nt)
+    status = nf90_inquire(ncid, unlimiteddimid = dimid)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+    status = nf90_inquire_dimension(ncid, dimid, len = nt)
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
  
 ! Read NZ
  
     status = nf90_inq_dimid( ncid, "nz", dimid )
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
-    status = nf90_inquire_dimension(ncid, dimid, len = nx)
+    status = nf90_inquire_dimension(ncid, dimid, len = nz)
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
  
 ! Read NY
@@ -213,7 +215,7 @@
     status = nf90_close(ncid)
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
  
-    WRITE(6,*) nx, ny, nz, nt
+!   WRITE(6,*) nx, ny, nz, nt
 
     RETURN
     END SUBROUTINE READ_NC4_DIMS
@@ -265,7 +267,7 @@
     status = nf90_close(ncid)
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
  
-    WRITE(6,*) wbc, ebc, sbc, nbc
+!   WRITE(6,*) wbc, ebc, sbc, nbc
 
     RETURN
     END SUBROUTINE READ_NC4_ATT
