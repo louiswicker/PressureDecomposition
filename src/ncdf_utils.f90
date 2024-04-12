@@ -226,14 +226,16 @@
 !
 !===========================================================
 
-    SUBROUTINE READ_NC4_ATT( filename, wbc, ebc, sbc, nbc )
+    SUBROUTINE READ_NC4_ATT( filename, wbc, ebc, sbc, nbc, model )
 
     use netcdf
 
     implicit none
  
-    integer, intent(out) :: wbc, ebc, sbc, nbc
     character(len=100), intent(in) :: filename
+
+    integer, intent(out) :: wbc, ebc, sbc, nbc
+    character(len=100), intent(out) :: model
  
     integer :: status, ncid, dimid
  
@@ -260,6 +262,11 @@
 ! Read NBC
  
     status = nf90_get_att(ncid, NF90_GLOBAL, "nbc", nbc)
+    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+
+! Read MODEL type
+ 
+    status = nf90_get_att(ncid, NF90_GLOBAL, "model", model)
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
 
 ! Close file

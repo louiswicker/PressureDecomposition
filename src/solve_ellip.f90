@@ -2,18 +2,18 @@
 ! 
 ! 
 
-  SUBROUTINE SOLVE_ELLIP(ni,nj,nk,wbc,ebc,sbc,nbc,dx,dy,atri,ctri,btri,rhs3d,sol3d)
+  SUBROUTINE SOLVE_ELLIP(nx,ny,nz,wbc,ebc,sbc,nbc,dx,dy,atri,ctri,btri,rhs3d,sol3d)
 
   USE SINGLETON
 
   implicit none
 
-  integer, intent(in)                       :: ni, nj, nk
+  integer, intent(in)                       :: nx, ny, nz
   integer, intent(in)                       :: wbc, ebc, sbc, nbc
   real,    intent(in)                       :: dx,dy
-  real,    intent(in),  dimension(ni,nj,nk) :: atri, ctri, btri
-  real,    intent(in),  dimension(ni,nj,nk) :: rhs3d
-  real,    intent(out), dimension(ni,nj,nk) :: sol3d
+  real,    intent(in),  dimension(nx,ny,nz) :: atri, ctri, btri
+  real,    intent(in),  dimension(nx,ny,nz) :: rhs3d
+  real,    intent(out), dimension(nx,ny,nz) :: sol3d
 
   real*8 :: pavgin
 
@@ -44,9 +44,9 @@
 !
 ! Input:
 !   Integer variables:
-!     ni  = number of grid points in x
-!     nj  = number of grid points in y
-!     nk  = number of grid points in z
+!     nx  = number of grid points in x
+!     ny  = number of grid points in y
+!     nz  = number of grid points in z
 !
 !     wbc = west boundary condition (see below)
 !     ebc = east boundary condition (see below)
@@ -63,22 +63,22 @@
 ! Output:
 !
 !   Real three-dimensional arrays:
-!     soln (ni,nj,nk) 
+!     soln (nx,ny,nz) 
 !
 !-----------------------------------------------------------------------
 
   integer :: i,j,k,nloop,ipb,ipe,jpb,jpe,kpb,kpe,imirror,jmirror
   real    :: rdx,rdy
   real*8 :: dpi,pavg,frac
-  real, dimension(0:nk+1) :: thr0
+  real, dimension(0:nz+1) :: thr0
   real, dimension(:,:,:), allocatable :: dum1,dum2,dum3,divx,uten,vten,wten,buoy
 
-  real, dimension(0:nk+1) :: r1,rf0,rr0,mh,mf,zf
+  real, dimension(0:nz+1) :: r1,rf0,rr0,mh,mf,zf
 
   complex, dimension(:,:),   allocatable :: rhs,trans
   complex, dimension(:,:,:), allocatable :: deft
-  complex, dimension(0:nk+1)             :: diag,lgbth,lgbph
-  real,    dimension(0:nk+1)             :: cfa,cfc
+  complex, dimension(0:nz+1)             :: diag,lgbth,lgbph
+  real,    dimension(0:nz+1)             :: cfa,cfc
 
 !-----------------------------------------------------------------------
 
@@ -97,7 +97,7 @@
 !-----------------------------------------------------------------------
 
   write(6,*) 
-  write(6,*) ' SOLVE3D_ELLIPTICAL:  ni, nj, nz', ni, nj, nk
+  write(6,*) ' ---> SOLVE_ELLIPTICAL:  nx, ny, nz', nx, ny, nz
 
   if(wbc.eq.1.and.ebc.ne.1)then
     print *
@@ -137,10 +137,10 @@
 
 
   ipb=1
-  ipe=ni
+  ipe=nx
 
   jpb=1
-  jpe=nj
+  jpe=ny
 
   imirror = 0
   jmirror = 0
@@ -148,24 +148,25 @@
   if( (wbc.eq.2.or.wbc.eq.3).or.(ebc.eq.2.or.ebc.eq.3) )then
 
     imirror = 1
-    ipe = ni*2
+    ipe = nx*2
 
   endif
 
   if( (sbc.eq.2.or.sbc.eq.3).or.(nbc.eq.2.or.nbc.eq.3) )then
 
     jmirror = 1
-    jpe = nj*2
+    jpe = ny*2
 
   endif
 
   kpb=0
-  kpe=nk+1
+  kpe=nz+1
 
-  print *,'  ipb,ipe         = ',ipb,ipe
-  print *,'  jpb,jpe         = ',jpb,jpe
-  print *,'  kpb,kpe         = ',kpb,kpe
-  print *,'  imirror,jmirror = ',imirror,jmirror
+! print *,'  ipb,ipe         = ',ipb,ipe
+! print *,'  jpb,jpe         = ',jpb,jpe
+! print *,'  kpb,kpe         = ',kpb,kpe
+! print *,'  imirror,jmirror = ',imirror,jmirror
+
   allocate(  deft(ipb:ipe,jpb:jpe,kpb:kpe) )
 
 !----- constants -----
@@ -182,9 +183,9 @@
 !-----------------------------------------------------------------------
 !  forcing for buoyancy pressure
 
-    do k=1,nk
-    do j=1,nj
-    do i=1,ni
+    do k=1,nz
+    do j=1,ny
+    do i=1,nx
       deft(i,j,k) = rhs3d(i,j,k)  
     enddo
     enddo
@@ -194,24 +195,24 @@
 !  p solver
 
 
-  write(6,*) '  ipb,ipe,jpb,jpe,kpb,kpe = ',ipb,ipe,jpb,jpe,kpb,kpe
+! write(6,*) '  ipb,ipe,jpb,jpe,kpb,kpe = ',ipb,ipe,jpb,jpe,kpb,kpe
   write(6,*) 
 
   allocate(   rhs(ipb:ipe,jpb:jpe) )
   allocate( trans(ipb:ipe,jpb:jpe) )
 
-  DO k=1,nk
+  DO k=1,nz
 
-    do j=1,nj
-    do i=1,ni
+    do j=1,ny
+    do i=1,nx
       rhs(i,j)=deft(i,j,k)
     enddo
     enddo
 
     if(imirror.eq.1)then
 
-      do j=1,nj
-      do i=1,ni
+      do j=1,ny
+      do i=1,nx
         rhs(ipe+1-i,j)=rhs(i,j)
       enddo
       enddo
@@ -220,8 +221,8 @@
 
     if(jmirror.eq.1)then
 
-      do j=1,nj
-      do i=1,ni
+      do j=1,ny
+      do i=1,nx
         rhs(i,jpe+1-j)=rhs(i,j)
       enddo
       enddo
@@ -230,8 +231,8 @@
 
     if(imirror.eq.1.and.jmirror.eq.1)then
 
-      do j=1,nj
-      do i=1,ni
+      do j=1,ny
+      do i=1,nx
         rhs(ipe+1-i,jpe+1-j)=rhs(i,j)
       enddo
       enddo
@@ -251,7 +252,7 @@
   DO j=jpb,jpe
   DO i=ipb,ipe
 
-    DO k = 1,nk
+    DO k = 1,nz
 
       diag(k) = 2.0d0*( dcos(2.0d0*dpi*dble(i-1)/dble(ipe))                     &
                       + dcos(2.0d0*dpi*dble(j-1)/dble(jpe)) - 2.0d0 ) / (dx*dx) &
@@ -261,16 +262,16 @@
 
     IF( i .eq. 1 .and. j .eq. 1 ) THEN  
 
-      r1(nk+1) = 0.0
-      r1(nk)   = 0.0
+      r1(nz+1) = 0.0
+      r1(nz)   = 0.0
 
-      DO k = nk,2,-1
+      DO k = nz,2,-1
 
         r1(k-1) = (deft(i,j,k) - ctri(i,j,k)*r1(k+1) - diag(k)*r1(k)) / atri(i,j,k)
 
       ENDDO
 
-      DO k = 1,nk
+      DO k = 1,nz
 
         deft(i,j,k) = cmplx( r1(k), 0.0 )
 
@@ -281,16 +282,16 @@
       lgbth(1) = -ctri(i,j,1) / diag(1)
       lgbph(1) =  deft(i,j,1) / diag(1)
 
-      DO k = 2,nk
+      DO k = 2,nz
 
         lgbth(k) = -ctri(i,j,k) / (atri(i,j,k)*lgbth(k-1) + diag(k))
         lgbph(k) = (deft(i,j,k) - atri(i,j,k)*lgbph(k-1)) / (atri(i,j,k)*lgbth(k-1) + diag(k))
 
       ENDDO
 
-      deft(i,j,nk) = lgbph(nk)
+      deft(i,j,nz) = lgbph(nz)
 
-      DO k = nk-1,1,-1
+      DO k = nz-1,1,-1
 
         deft(i,j,k) = lgbth(k)*deft(i,j,k+1) + lgbph(k)
 
@@ -301,7 +302,7 @@
   ENDDO
   ENDDO
 
-  DO k=1,nk
+  DO k=1,nz
 
     do j=jpb,jpe
     do i=ipb,ipe
@@ -311,8 +312,8 @@
 
     trans=fft(rhs,inv=.true.)
 
-    do j=1,nj
-    do i=1,ni
+    do j=1,ny
+    do i=1,nx
       deft(i,j,k)=real(trans(i,j))
     enddo
     enddo
@@ -329,13 +330,13 @@
 ! pavg = 0.0d0
 ! frac = 0.0d0
 !
-! do j=1,nj
-! do i=1,ni
-!   frac = frac + real(deft(i,j,nk))
+! do j=1,ny
+! do i=1,nx
+!   frac = frac + real(deft(i,j,nz))
 ! enddo
 ! enddo
 !
-! frac = frac / (ni*nj)
+! frac = frac / (nx*ny)
 !
 ! pavg = pavgin
 !
@@ -347,25 +348,25 @@
 !
 ! offset solution by mean pressure
 !
-! do k=1,nk
-! do j=1,nj
-! do i=1,ni
+! do k=1,nz
+! do j=1,ny
+! do i=1,nx
 !   deft(i,j,k) = deft(i,j,k) + frac
-!   if(k.eq.nk) pavg = pavg + deft(i,j,k)
+!   if(k.eq.nz) pavg = pavg + deft(i,j,k)
 ! enddo
 ! enddo
 ! enddo
 !
-! pavg = pavg / (ni*nj)
+! pavg = pavg / (nx*ny)
 !
 ! print *,'  pavg      = ',pavg
 ! print *
 
 !---------------------------------------------------
 
-  do k=1,nk
-  do j=1,nj
-  do i=1,ni
+  do k=1,nz
+  do j=1,ny
+  do i=1,nx
       sol3d(i,j,k)=real(deft(i,j,k))
   enddo
   enddo

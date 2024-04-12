@@ -56,8 +56,6 @@
 
     output(:,:,:) = 0.0
 
-    write(6,*) dx, dy
-
     DO k=1,nz   ! outer loop
 
       DO j=2,ny-1

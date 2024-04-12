@@ -47,15 +47,18 @@
     integer :: wbc, ebc, sbc, nbc 
     integer :: nt, nx, ny, nz
 
-    character(len=100) :: infile, outfile
+! Command line args
 
-    real :: dx, dy
+    character(len=32)  :: arg
+    integer            :: narg
 
-    real, parameter :: g = 9.81
+    character(len=100) :: infile, outfile, model
 
-    character*10    :: var_names
+    real               :: dx, dy
 
-    namelist /inputs/ infile,outfile
+    character*10       :: var_names
+
+    real, parameter :: grav = 9.806
 
 !----------------- 3D field names for output netCDF4 file --------------------!
 
@@ -63,28 +66,51 @@
 
 !----------------- Read namelist in --------------------!
 
-    write(*,*) ' ---> Retrieve_Beta: Reading in namelist'
+    write(*,*) ' ---> Retrieve_Beta: Parsing Command Line arguments'
 
-    open(8,file='input.nml')
-    read(8,nml=inputs)
+    narg = 0
 
+    do while ( narg  <  command_argument_count() )
+
+        narg = narg + 1
+
+        call get_command_argument(narg, arg)
+        print '(2a, /)', arg
+
+        select case (arg)
+            case ('-i', '--input')
+                call get_command_argument(narg+1, arg)
+                infile = arg
+                print '(2a, /)', infile
+
+            case ('-o', '--output')
+                call get_command_argument(narg+1, arg)
+                outfile = arg
+                print '(2a, /)', outfile
+        end select
+    end do
+
+    write(*,*) ' ---> Retrieve_Beta: Reading dims and attrs'
 
     CALL READ_NC4_DIMS( infile, nt, nx, ny, nz )
 
-    CALL READ_NC4_ATT( infile, wbc, ebc, sbc, nbc )
+    CALL READ_NC4_ATT( infile, wbc, ebc, sbc, nbc, model )
 
     write(*,*)
     write(*,*) ' ---> Retrieve_Beta:  Input parameters\n'
-    write(*,*) '   infile      = ',infile
-    write(*,*) '   outfile     = ',outfile
-    write(*,*) '   nt          = ',nt
-    write(*,*) '   nx          = ',nx
-    write(*,*) '   ny          = ',ny
-    write(*,*) '   nz          = ',nz
-    write(*,*) '   wbc         = ',wbc
-    write(*,*) '   ebc         = ',ebc
-    write(*,*) '   sbc         = ',sbc
-    write(*,*) '   nbc         = ',nbc
+    write(*,*)
+    write(*,*) '  source model = ',model
+    write(*,*)
+    write(*,*) '  infile       = ',infile
+    write(*,*) '  outfile      = ',outfile
+    write(*,*) '  ntimes       = ',nt
+    write(*,*) '  nx           = ',nx
+    write(*,*) '  ny           = ',ny
+    write(*,*) '  nz           = ',nz
+    write(*,*) '  wbc          = ',wbc
+    write(*,*) '  ebc          = ',ebc
+    write(*,*) '  sbc          = ',sbc
+    write(*,*) '  nbc          = ',nbc
 
 !----------------- Allocate Storage --------------------!
 
@@ -122,16 +148,12 @@
 
 ! assume constant grid in horizontal
 
-    dx = (xh(2) - xh(1))*1000.   
-    dy = (yh(2) - yh(1))*1000.
+    dx = (xh(2) - xh(1))
+    dy = (yh(2) - yh(1))
 
 ! DO a time loop....
 
     DO n = 1,nt
-
-!   DO k = nz,1,-1
-!     write(6,*) k, rhs(31,31,k,n), zh(31,31,k,n)
-!   ENDDO
 
       call writemxmn(rhs(1,1,1,n), nx, ny, nz, 'DENSITY')
 
@@ -177,13 +199,13 @@
 
 ! Call Horizontal laplacian operator
 
-      write(*,*) ' ---> Retrieve_Beta: computing laplacian of density'
+      write(*,*) ' ---> Retrieve_Beta: Computing laplacian of density'
 
       call DELSQH(rhs(1,1,1,n), tmp, dx, dy, nx, ny, nz)
 
       call writemxmn(tmp, nx, ny, nz, 'LAPLACIAN of DENSITY')
 
-      tmp(:,:,:) = -g * tmp(:,:,:)
+      tmp(:,:,:) = -grav * tmp(:,:,:)
 
 ! Solve elliptic system for Beta
 
