@@ -18,7 +18,7 @@
     real, dimension(nx,ny,nz,nt), intent(in) :: var
     real, dimension(nx), intent(in)          :: x
     real, dimension(ny), intent(in)          :: y
-    real, dimension(nz), intent(in)          :: z
+    real, dimension(nx,ny,nz,nt), intent(in) :: z
     real, dimension(nt), intent(in)          :: time
 
     character(len=10),   intent(in)          :: label
@@ -61,7 +61,7 @@
     status = nf90_def_var(ncid,"yh",nf90_float,(/nyDimID/), yVarID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
-    status = nf90_def_var(ncid,"zh",nf90_float,(/nzDimID/), zVarID)
+    status = nf90_def_var(ncid,"zh",nf90_float,(/nxDimID,nyDimID,nzDimID,ntDimID/), zVarID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
     status = nf90_def_var(ncid,"time",nf90_float,(/ntDimID/), tVarID)
@@ -112,7 +112,7 @@
     implicit none
 
     integer, intent(in) :: nt, nx, ny, nz
-    character(len=100), intent(in) :: filename
+    character(len=*), intent(in) :: filename
 
     real, dimension(nx), intent(out) :: xc
     real, dimension(ny), intent(out) :: yc
@@ -174,7 +174,7 @@
     implicit none
  
     integer, intent(out) :: nt, nx, ny, nz
-    character(len=100), intent(in) :: filename
+    character(len=*), intent(in) :: filename
  
     integer :: status, ncid, dimid
  
@@ -232,10 +232,10 @@
 
     implicit none
  
-    character(len=100), intent(in) :: filename
+    character(len=*), intent(in) :: filename
 
     integer, intent(out) :: wbc, ebc, sbc, nbc
-    character(len=100), intent(out) :: model
+    character(len=*), intent(out) :: model
  
     integer :: status, ncid, dimid
  

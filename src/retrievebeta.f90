@@ -49,10 +49,10 @@
 
 ! Command line args
 
-    character(len=32)  :: arg
+    character(len=256) :: arg
     integer            :: narg
 
-    character(len=100) :: infile, outfile, model
+    character(len=256) :: infile, outfile, model
 
     real               :: dx, dy
 
