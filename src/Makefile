@@ -33,6 +33,7 @@ FOPTS = -g -O0 -fbacktrace -fcheck=all -w -Wall -Wno-unused-parameter
 
 retrievebeta:   $(OBFILES) retrievebeta.o
 		$(F90) $(FOPTS) -o retrievebeta.exe retrievebeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+		cp retrievebeta.exe ../run/retrievebeta.exe
 
 testbeta:   $(OBFILES) testbeta.o
 		$(F90) $(FOPTS) -o testbeta.exe testbeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)

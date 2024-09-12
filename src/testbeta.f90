@@ -57,14 +57,18 @@
 
     integer  :: i,j,k,n
 
-    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe, atri, btri, ctri, tmpz
+    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe, atri, btri, ctri
     real, dimension(:),allocatable :: prs0, u0, v0, rho0, pi0, th0, qv0, thv0, rhoE
 
     real, dimension(:,:,:),allocatable :: u, v, w, tmp
 
+    real, dimension(:,:,:),allocatable :: atri3, btri3, ctri3
+
     real, dimension(:,:,:),allocatable :: qvpert,thpert,thv,prspert
 
     real, dimension(:,:,:),allocatable :: den, rho, th, qv, prs
+
+    real, dimension(:,:,:,:),allocatable :: zh3
 
     real zfac, hradius, zradius, rho_avg
     real tv0, tv1, pavgin
@@ -73,10 +77,12 @@
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
 
-    character*12, parameter :: outfile = "beta_test_out.nc"
-    character*10, parameter :: testfile = "beta_in.nc   "
+    character*16, parameter :: outfile = "test_beta_out.nc"
+    character*16, parameter :: testfile = "test_beta_in.nc"
 
     character*10, dimension(nv) :: var_names
+
+    real, dimension(:), allocatable :: time
 
     real :: pii 
 
@@ -109,7 +115,7 @@
     real, parameter :: cvdrd  = cv/rd
     real, parameter :: cpdrd  = cp/rd
 
-    var_names(1) = "IC_Beta   "
+    var_names(1) = "Force_Beta"
     var_names(2) = "Soln_Beta "
 
     pii = 4.0*atan(1.0)
@@ -139,7 +145,6 @@
     allocate( atri(nz+1) )
     allocate( btri(nz) )
     allocate( ctri(nz+1) )
-    allocate( tmpz(nz+1) )
 
     allocate( u(nx,ny,nz) )
     allocate( v(nx,ny,nz) )
@@ -154,9 +159,16 @@
 
 ! alloc space for IC and solution
 
+    allocate( time(nv) )
+    allocate( zh3(nx,ny,nz,nv) )
     allocate( rhs(nx,ny,nz,nv) )
+    allocate( atri3(nx,ny,nz)  )
+    allocate( btri3(nx,ny,nz)  )
+    allocate( ctri3(nx,ny,nz)  )
 
     rhs(:,:,:,:) = 0.0
+
+    time(:) = 1.0
 
 ! Simple WK sounding
 
@@ -229,21 +241,35 @@
 
     DO k = 1,nz
 
-!      atri(k) = mfc(k)*mfe(k)*rhoE(k) / (dz*dz*rho0(k))
-!      ctri(k) = mfc(k)*mfe(k+1)*rhoE(k+1) / (dz*dz*rho0(k))
-!      btri(k) = - atri(k) - ctri(k)
-
-       atri(k) = mfc(k)*mfe(k) / (dz*dz)
-
-       ctri(k) = mfc(k)*mfe(k+1) / (dz*dz)
-
+       atri(k) = mfc(k)*mfe(k)*rhoE(k) / (dz*dz*rho0(k))
+       ctri(k) = mfc(k)*mfe(k+1)*rhoE(k+1) / (dz*dz*rho0(k))
        btri(k) = - atri(k) - ctri(k)
+
+!      atri(k) = mfc(k)*mfe(k) / (dz*dz)
+!      ctri(k) = mfc(k)*mfe(k+1) / (dz*dz)
+!      btri(k) = - atri(k) - ctri(k)
 
     ENDDO
     
+!------- ELLIPTIC Solver needs 3D coefficient
+
+    DO k=1,nz
+    DO j=1,ny
+    DO i=1,nx
+
+        zh3(i,j,k,:) = zh(k)
+        atri3(i,j,k) = atri(k)
+        btri3(i,j,k) = btri(k)
+        ctri3(i,j,k) = ctri(k)
+
+    ENDDO
+    ENDDO
+    ENDDO
+
 !------- Compute 3D state using J & R 2015
 
     write(*,*) ' ---> TEST_BETA: computing full state density'
+    write(*,*)
 
 ! Calculate buoyancy
 
@@ -264,26 +290,29 @@
     
 ! Write out field so we can test the retrieve program...
 
-    call writenc2(testfile, nx, ny, nz, 1, xh, yh, zh, rhs, 'den')
+    call WRITE_NC4_FILE(testfile, 1, nx, ny, nz, xh, yh, zh3, time, rhs(1,1,1,1), 'den', .true.)
 
 ! Call Horizontal laplacian operator
 
     call DELSQH(rhs(1,1,1,1), tmp, dx, dy, nx, ny, nz, 'DENSITY')
 
-    rhs(:,:,:,2) = -g * tmp(:,:,:) 
+    rhs(:,:,:,1) = -g * tmp(:,:,:) 
 
 ! Set boundary conditions for beta=0 at ground - reflective boundary condition.
 
-    btri( 1) = btri( 1) - atri( 1) 
-    btri(nz) = btri(nz) - ctri(nz) 
+    btri3(:,:, 1) = btri3(:,:, 1) - atri3(:,:, 1) 
+    btri3(:,:,nz) = btri3(:,:,nz) - ctri3(:,:,nz) 
 
-! Solve elliptic system for Beta
+    write(*,*) ' ---> TEST_BETA:  Forcing for ELLIPTIC SYSTEM'
 
     call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(1))
 
+    write(*,*)
+! Solve elliptic system for Beta
+
     write(*,*) ' ---> TEST_BETA:  Solving elliptic system'
 
-    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,2), tmp)
+    call SOLVE_ELLIP(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri3, ctri3, btri3, rhs(1,1,1,1), tmp)
 
     rhs(:,:,:,2) = tmp(:,:,:)
 
@@ -298,7 +327,7 @@
 
     write(*,*) ' ---> TEST_BETA:  Writing netCDF4 file'
 
-    call writenc2(outfile, nx, ny, nz, 2, xh, yh, zh, rhs, var_names)
+    call WRITE_NC4_FILE(outfile, 2, nx, ny, nz, xh, yh, zh3, time, rhs, var_names, .true.)
 
     write(*,*) ' ---> TEST_BETA:  Wrote netCDF4 file'
 

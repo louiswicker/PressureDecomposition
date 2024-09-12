@@ -226,7 +226,7 @@
 
     write(*,*) ' ---> Retrieve_Beta::  Writing netCDF4 to outfile'
 
-    call WRITE_NC4_FILE(outfile, nt, nx, ny, nz, xh, yh, zh, time, soln, var_names)
+    call WRITE_NC4_FILE(outfile, nt, nx, ny, nz, xh, yh, zh, time, soln, var_names, .true.)
 
     write(*,*) ' ---> Retrieve_Beta::  Wrote netCDF4 to outfile'
 

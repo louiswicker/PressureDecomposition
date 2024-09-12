@@ -10,7 +10,7 @@
     real, dimension(nx,ny,nz), intent(in) :: array
     character(len=*), intent(in)          :: label
 
-    real thesum, theavg, stddev
+    real*8 thesum, theavg, stddev
 
     thesum = SUM(array)
 
