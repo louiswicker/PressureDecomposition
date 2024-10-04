@@ -16,9 +16,11 @@ in CM1, but it is not set up for runs using distributed memory (the majority of 
 
 - The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification of the vertical tridiagonal weights.
 
-- The buoyant retrieval has been closed compared to the methods and test described in:
+- The buoyant retrieval has been carefully compared to the methods and tests described in:
 
 > Jeevanjee, N., and D. M. Romps, 2015: Effective Buoyancy, Inertial Pressure, and the Mechanical Generation of Boundary Layer Mass Flux by Cold Pools. J. Atmos. Sci., 72, 3199–3213, https://doi.org/10.1175/JAS-D-14-0349.1.
+
+<pre> and the beta forcing tests codes use the tests from that paper.
 
 - Their approach uses the non-base state approach first introduced by:
 
@@ -26,9 +28,9 @@ in CM1, but it is not set up for runs using distributed memory (the majority of 
 
   and discussed further and used in 3D storm analysis by:
 
-#
-
 > Dawson, D. T., M. Xue, A. Shapiro, J. A. Milbrandt, and A. D. Schenkman, 2016: Sensitivity of Real-Data Simulations of the 3 May 1999 Oklahoma City Tornadic Supercell and Associated Tornadoes to Multimoment Microphysics. Part II: Analysis of Buoyancy and Dynamic Pressure Forces in Simulated Tornado-Like Vortices. J. Atmos. Sci., 73, 1039–1061, https://doi.org/10.1175/JAS-D-15-0114.1.
+
+#
 
 2. IMPORTANT NOTES
 - Program is currently set up to read/write netcdf output. Original
