@@ -11,22 +11,22 @@
 
 1. GENERAL DESCRIPTION
 
-This program was originally created by George Bryan (NCAR) and modified by
-Jeff Trapp (UIUC) and Geoff Marion (CIWRO). Similar code is implemented
-in CM1, but it is not set up for runs using distributed memory
-(the majority of CM1 simulations). 
+- This program was originally created by George Bryan (NCAR) and modified by Jeff Trapp (UIUC) and Geoff Marion (CIWRO). Similar code is implemented
+in CM1, but it is not set up for runs using distributed memory (the majority of CM1 simulations). 
 
-The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification of the vertical tridiagonal weights.
+- The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification of the vertical tridiagonal weights.
 
-The buoyant retrieval has been closed compared to the methods and test described in:
+- The buoyant retrieval has been closed compared to the methods and test described in:
 
 > Jeevanjee, N., and D. M. Romps, 2015: Effective Buoyancy, Inertial Pressure, and the Mechanical Generation of Boundary Layer Mass Flux by Cold Pools. J. Atmos. Sci., 72, 3199–3213, https://doi.org/10.1175/JAS-D-14-0349.1.
 
-Their approach uses the non-base state approach first introduced by:
+- Their approach uses the non-base state approach first introduced by:
 
 > Davies-Jones, R., 2003: An expression for effective buoyancy in surroundings with horizontal density gradients. J. Atmos. Sci., 60, 2922–2925, https://doi.org/10.1175/1520-0469(2003)060&#60;2922:aefebi&#62;2.0.co;2.
 
-and discussed further and used in 3D storm analysis by:
+  and discussed further and used in 3D storm analysis by:
+
+#
 
 > Dawson, D. T., M. Xue, A. Shapiro, J. A. Milbrandt, and A. D. Schenkman, 2016: Sensitivity of Real-Data Simulations of the 3 May 1999 Oklahoma City Tornadic Supercell and Associated Tornadoes to Multimoment Microphysics. Part II: Analysis of Buoyancy and Dynamic Pressure Forces in Simulated Tornado-Like Vortices. J. Atmos. Sci., 73, 1039–1061, https://doi.org/10.1175/JAS-D-15-0114.1.
 
@@ -57,6 +57,7 @@ and discussed further and used in 3D storm analysis by:
   averaging over as large a subdomain as possible to ensure that it is
   representative of this new base state.
 
+#
 
 3. BEFORE YOU RUN:
 - Modify range of desired CM1 output times to perform analysis in run_pdcomp.bash
