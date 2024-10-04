@@ -14,7 +14,7 @@
 - This program was originally created by George Bryan (NCAR) and modified by Jeff Trapp (UIUC) and Geoff Marion (CIWRO). Similar code is implemented
 in CM1, but it is not set up for runs using distributed memory (the majority of CM1 simulations). 
 
-- The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification of the vertical tridiagonal weights.
+- The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification of the vertical tridiagonal weights, however, this only impacted the retrieval of buoyant pressure forcing near the lower and upper boundaries.  They dynamic forcing had, as far as I could tell, the correct specification.
 
 - The buoyant retrieval has been carefully compared to the methods and tests described in:
 
