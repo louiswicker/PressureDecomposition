@@ -3,6 +3,8 @@
 #---------------------#
 #  Config variables   #
 
+VPATH=main:test:tools
+
 # Fortran compiler
 F90=gfortran
 
@@ -41,29 +43,29 @@ testbeta:   $(OBFILES) testbeta.o
 testpb:     $(OBFILES) testpb.o
 		$(F90) $(FOPTS) -o testpb.exe testpb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
-retrievebeta.o:   retrievebeta.f90
+retrievebeta.o:  main/retrievebeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-testbeta.o:   testbeta.f90
+testbeta.o: test/testbeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-testpb.o:   testpb.f90
+testpb.o:   test/testpb.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-array_utils.o: array_utils.f90
+array_utils.o: tools/array_utils.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-ncdf_utils.o:  ncdf_utils.f90
+ncdf_utils.o:  tools/ncdf_utils.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-bc.o:       bc.f90
-		$(F90) -c $(FOPTS) bc.f90 
+bc.o:       tools/bc.f90
+		$(F90) -c $(FOPTS) $<
 
-singleton.o:   singleton.f90
-		$(F90) -c $(FOPTS) singleton.f90 
+singleton.o:  main/singleton.f90
+		$(F90) -c $(FOPTS) $<
 
 solve_ellip.o:	solve_ellip.f90
-		$(F90) -c $(FOPTS) solve_ellip.f90 
+		$(F90) -c $(FOPTS) $<
 
 clean:
 		rm -rf *.o *.mod *.exe

@@ -1,7 +1,24 @@
 #---------------------------#
+NEW README for p_decomp program #
+# 
+README written by Lou Wicker
+October 2024
+#---------------------------#
+
+p_decomp
+├── src
+│   ├── p_decomp
+│   ├── tools
+│   │   
+├── test -- directory for test codes
+
+
+
+
+#---------------------------#
 README for pdcomp program #
 # 
-Original README (needs updating)
+Original README 
 #---------------------------#
 
 Contents:
