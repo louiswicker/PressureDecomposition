@@ -16,19 +16,19 @@ in CM1, but it is not set up for runs using distributed memory (the majority of 
 
 - The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification tridiagonal solution for buoyany pressure.  The maximum effect from this creates solution errors near the lower and upper boundaries.  The dynamic forcing appeared to have the correct vertical boundary condition.
 
-- The buoyant pressure retrieval has been correctly and carefully compared to the idealized bouyant forcing tests described in:
+- The buoyant pressure retrieval has been correctly and carefully compared to the idealized buoyant forcing tests described in:
 
 > Jeevanjee, N., and D. M. Romps, 2015: Effective Buoyancy, Inertial Pressure, and the Mechanical Generation of Boundary Layer Mass Flux by Cold Pools. J. Atmos. Sci., 72, 3199–3213, https://doi.org/10.1175/JAS-D-14-0349.1.
 
-  <code>&nbsp;</code> The "test" directory has test code derived from that paper.  Jeevanjee and Romps use the non-base state approach first introduced by:
+- The "test" directory has validation code based on this paper.  Jeevanjee and Romps use the non-base state approach first introduced by:
 
 > Davies-Jones, R., 2003: An expression for effective buoyancy in surroundings with horizontal density gradients. J. Atmos. Sci., 60, 2922–2925, https://doi.org/10.1175/1520-0469(2003)060&#60;2922:aefebi&#62;2.0.co;2.
 
-  <code>&nbsp;</code> and discussed further and used in 3D storm analysis by:
+  <code>&nbsp;</code> and discussed further in 3D storm analyses by:
 
 > Dawson, D. T., M. Xue, A. Shapiro, J. A. Milbrandt, and A. D. Schenkman, 2016: Sensitivity of Real-Data Simulations of the 3 May 1999 Oklahoma City Tornadic Supercell and Associated Tornadoes to Multimoment Microphysics. Part II: Analysis of Buoyancy and Dynamic Pressure Forces in Simulated Tornado-Like Vortices. J. Atmos. Sci., 73, 1039–1061, https://doi.org/10.1175/JAS-D-15-0114.1.
 
-  <code>&nbsp;</code> See a good discussion by Dawson et al. (2016) regarding the various ways to calculate the bouyant forcing term in cloud models.
+- See a good discussion in Dawson et al. (2016) regarding the various ways to calculate the buoyant forcing term in cloud models.
 
 #
 
