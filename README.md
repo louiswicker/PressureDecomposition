@@ -1,8 +1,9 @@
-# README for p_decomp program #
-#
+# README for p_decomp program
+
 > written by Lou Wicker, October 2024
 
 # Contents
+
 1. GENERAL DESCRIPTION
 2. IMPORTANT NOTES
 3. HOW TO RUN
