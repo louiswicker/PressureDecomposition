@@ -20,7 +20,9 @@ in CM1, but it is not set up for runs using distributed memory (the majority of 
 
 > Jeevanjee, N., and D. M. Romps, 2015: Effective Buoyancy, Inertial Pressure, and the Mechanical Generation of Boundary Layer Mass Flux by Cold Pools. J. Atmos. Sci., 72, 3199–3213, https://doi.org/10.1175/JAS-D-14-0349.1.
 
-<pre> and the beta forcing tests codes use the tests from that paper.
+<pre> 
+    and the beta forcing tests codes use the tests from that paper.
+</pre>
 
 - Their approach uses the non-base state approach first introduced by:
 
