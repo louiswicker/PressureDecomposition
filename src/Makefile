@@ -11,6 +11,7 @@ F90=gfortran
 # Locations of netcdf include files and libraries
 
 # Locations of FFTW include files and libraries
+#
 FFTWINC=-I/usr/include # location of include files for fftw
 FFTWLIB=-L/usr/local/lib64 # location of libraries for fftw
 

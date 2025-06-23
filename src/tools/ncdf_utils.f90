@@ -6,7 +6,7 @@
 !===========================================================
 
 
-    SUBROUTINE WRITE_NC4_FILE(filename, nt, nx, ny, nz, x, y, z, time, var, label, split)
+    SUBROUTINE WRITE_NC4_FILE(filename, nt, nx, ny, nz, x, y, z, time, var, label, fourD)
 
     USE netcdf
 
@@ -21,9 +21,9 @@
     real, dimension(nx,ny,nz,nt), intent(in) :: z
     real, dimension(nt), intent(in)          :: time
 
-    character(len=*),dimension(nt),intent(in) :: label
+    character(len=7), intent(in)             :: label(nt)
     
-    logical, intent(in) :: split
+    logical, intent(in) :: fourD
 
 ! Local declarations
 
@@ -63,7 +63,7 @@
     status = nf90_def_var(ncid,"yh",nf90_float,(/nyDimID/), yVarID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
     
-    if ( .not. split ) then
+    if ( fourD ) then
 
       status = nf90_def_var(ncid,"zh",nf90_float,(/nxDimID,nyDimID,nzDimID,ntDimID/), zVarID)
       if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
@@ -72,7 +72,7 @@
       if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
       status = nf90_def_var(ncid, label(1), nf90_float,(/nxDimID,nyDimID,nzDimID,ntDimID/),VarID)
-      if(status /= nf90_NoErr) write(*,*) label, nf90_strerror(status)
+      if(status /= nf90_NoErr) write(*,*) label(1), nf90_strerror(status)
       
     else
     
@@ -100,7 +100,7 @@
     status = nf90_put_var(ncid, yVarID, y)
     if(status /= nf90_NoErr) write(*,*) 'Y-COORD: ', nf90_strerror(status)
 
-    if ( .not. split ) then
+    if ( fourD ) then
     
       status = nf90_put_var(ncid, zVarID, z)
       if(status /= nf90_NoErr) write(*,*) 'Z-COORD: ', nf90_strerror(status)
@@ -211,7 +211,7 @@
     integer, intent(out) :: nt, nx, ny, nz
     character(len=*), intent(in) :: filename
  
-    integer :: status, ncid, dimid
+    integer :: status, ncid, dimid, recorddimid
  
 !------------------Open netCDF-----------------------------
  
@@ -221,13 +221,13 @@
  
 ! Read NT (unlimited dimension)
  
-    status = nf90_inquire(ncid, unlimiteddimid = dimid)
+    status = nf90_inquire( ncid, unlimiteddimid = recorddimid)
     if (status /= nf90_noerr) write(*,*) 'No unlimited dimension, ', nf90_strerror(status)
 
-    status = nf90_inq_dimid( ncid, "nt", dimid )
     if (status /= nf90_noerr) write(*,*) "Cannot find NT, ", nf90_strerror(status)
-    status = nf90_inquire_dimension(ncid, dimid, len = nt)
-    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+
+    status = nf90_inquire_dimension(ncid, recorddimid, len = nt)
+    if (status /= nf90_noerr) write(*,*) "Cannot read number of records, ", nf90_strerror(status)
  
 ! Read NZ
  
