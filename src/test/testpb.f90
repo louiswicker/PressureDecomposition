@@ -47,7 +47,7 @@
     integer, parameter :: nz = 40
     integer, parameter :: nv = 4
 
-    integer, parameter :: pow = 4
+    integer, parameter :: pow = 2
 
     real,    parameter :: dx = 250.
     real,    parameter :: dy = 250.
@@ -57,10 +57,10 @@
 
     integer  :: i,j,k,n
 
-    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe, atri, btri, ctri, tmpz
+    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe, tmpz
     real, dimension(:),allocatable :: prs0, u0, v0, rho0, pi0, th0, qv0, thv0, rhoE
 
-    real, dimension(:,:,:),allocatable :: u, v, w, tmp
+    real, dimension(:,:,:),allocatable :: u, v, w, tmp, atri, btri, ctri
 
     real, dimension(:,:,:),allocatable :: qvpert,thpert,thv,prspert
 
@@ -134,12 +134,13 @@
     allocate( mfc(nz) )
     allocate( mfe(nz+1) )
 
+    allocate( tmpz(nz+1) )
+
 ! Tridiagonal coefficients
 
-    allocate( atri(nz+1) )
-    allocate( btri(nz) )
-    allocate( ctri(nz+1) )
-    allocate( tmpz(nz+1) )
+    allocate( atri(nx,ny,nz+1) )
+    allocate( btri(nx,ny,nz) )
+    allocate( ctri(nx,ny,nz+1) )
 
     allocate( u(nx,ny,nz) )
     allocate( v(nx,ny,nz) )
@@ -216,32 +217,6 @@
      yh(j) = -(ny/2)*dy + float(j-1) * dy
     ENDDO
 
-! Compute tridiagonal coefficients for pressure/density formulation
-
-    rhoE(:) = 0.0
-
-    DO k = 2,nz
-       rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
-    ENDDO
-
-    rhoE(1)    = rho0(1)  ! These need to be set for the boundary conditions
-    rhoE(nz+1) = rho0(nz)
-
-    DO k = 1,nz
-
-!      atri(k) = mfc(k)*mfe(k)*rhoE(k) / (dz*dz*rho0(k))
-!
-!      ctri(k) = mfc(k)*mfe(k+1)*rhoE(k+1) / (dz*dz*rho0(k))
-!      btri(k) = - atri(k) - ctri(k)
-
-       atri(k) = mfc(k)*mfe(k) / (dz*dz)
-
-       ctri(k) = mfc(k)*mfe(k+1) / (dz*dz)
-
-       btri(k) = - atri(k) - ctri(k)
-
-    ENDDO
-    
 !------- Compute 3D state buoayncy forcing similar to J&R 2015
 
     write(*,*) ' ---> TEST_Pb: computing RHS'
@@ -263,6 +238,35 @@
 
     ENDDO
 
+! Compute tridiagonal coefficients for pressure/density formulation
+
+    rhoE(:) = 0.0
+
+    DO k = 2,nz
+       rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
+    ENDDO
+
+    rhoE(1)    = rho0(1)  ! These need to be set for the boundary conditions
+    rhoE(nz+1) = rho0(nz)
+
+    DO k = 1,nz
+
+       atri(:,:,k) = mfc(k)*mfe(k) / (dz*dz)
+
+       ctri(:,:,k) = mfc(k)*mfe(k+1) / (dz*dz)
+
+       btri(:,:,k) = - atri(:,:,k) - ctri(:,:,k)
+
+    ENDDO
+    
+! Set new btri for first and last rows for dpb/dz= den*dz*B at ground 
+
+!   btri(:,:, 1) = btri(:,:, 1) + atri(:,:, 1)*dz*rhs(:,:, 1,1)*rho0( 1)
+!   btri(:,:,nz) = btri(:,:,nz) - ctri(:,:,nz)*dz*rhs(:,:,nz,1)*rho0(nz)
+
+!   btri(:,:, 1) = - atri(:,:, 1)
+!   btri(:,:,nz) = - ctri(:,:,nz)
+
 ! Compute del(rho0*B) / del_Z
 
     DO j=1,ny
@@ -270,39 +274,30 @@
 
 ! Compute vertical gradient of [rho * buoy] first at w-points
 
-      tmpz(1) = rhs(i,j,1,1) ! at ground VPGF = rho * buoy
+      tmpz(1) = 0.0
 
       DO k=2,nz
-        tmpz(k) = (rhs(i,j,k,1) - rhs(i,j,k-1,1)) / dz
+        tmpz(k) = (rho0(k)*rhs(i,j,k,1) - rho0(k-1)*rhs(i,j,k-1,1)) / dz
       ENDDO
 
-      tmpz(nz+1) = rhs(i,j,nz,1)  ! at top, VPGF = rho * buoy
+      tmpz(nz+1) = 0.0
 
       DO k = 1,nz
         rhs(i,j,k,2) = 0.5*(tmpz(k+1) + tmpz(k))
       ENDDO
 
+!     rhs(i,j, 1,2) = rhs(i,j, 1,2) - rhs(i,j, 1,1)*rhoE(   1) * mfe(   1) / dz
+!     rhs(i,j,nz,2) = rhs(i,j,nz,2) + rhs(i,j,nz,1)*rhoE(nz+1) * mfe(nz+1) / dz
+
     ENDDO
     ENDDO
-
-! Set RHS boundary conditions for dpb/dz=0 at ground - von Neuman condition
-
-    DO j=1,ny
-    DO i=1,nx
-      rhs(i,j, 1,2) = rhs(i,j, 1,2) + atri( 1)*(dz*rhs(i,j, 1,1))  ! setting gradient to buoy
-      rhs(i,j,nz,2) = rhs(i,j,nz,2) - ctri(nz)*(dz*rhs(i,j,nz,1))  ! setting gradient to buoy
-    ENDDO
-    ENDDO
-
-! Set new btri for first and last rows for dpb/dz=0 at ground - von Neuman condition
-
-    btri( 1) = btri( 1) + atri( 1) 
-    btri(nz) = btri(nz) + ctri(nz) 
 
 ! Solve elliptic system for Pb
 
     call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(3))
-    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,2), tmp)
+
+    CALL SOLVE_ELLIP(nx,ny,nz,wbc,ebc,sbc,nbc,dx,dy,atri,ctri,btri,rhs(1,1,1,2),tmp)
+
     rhs(:,:,:,2) = tmp(:,:,:)
 
     write(*,*) ' ---> TEST_Pb --> computed buoyany pressure'
@@ -317,12 +312,13 @@
     DO j=1,ny
     DO i=1,nx
 
-      tmpz(1) = -rhs(i,j,1,1)
+      tmpz(1) = rhs(i,j,1,1)*rhoE(1)
 
       DO k=2,nz
-        tmpz(k) = -(rhs(i,j,k,2) - rhs(i,j,k-1,2)) / dz
+        tmpz(k) = -(rho0(k)*rhs(i,j,k,2) - rho0(k-1)*rhs(i,j,k-1,2)) / dz
       ENDDO
-      tmpz(nz+1) = -rhs(i,j,nz,1)
+
+      tmpz(nz+1) = rhs(i,j,nz,1)*rhoE(nz+1)
 
       DO k=1,nz
         rhs(i,j,k,3) = 0.5*(tmpz(k) + tmpz(k+1))
@@ -341,65 +337,6 @@
     write(*,*) 'GETPP:  After writenc2'
 
     END PROGRAM TEST_Pb
-
-!=========================================================
-!
-!
-! Del^2 - horiz
-!
-!
-!=========================================================
-    SUBROUTINE DELSQH(input, output, dx, dy, nx, ny, nz, label)
-
-    implicit none
-
-    integer, intent(in) :: nx, ny, nz
-
-    real, intent(in) :: dx, dy 
-
-    real, dimension(nx,ny,nz), intent(in)  :: input
-
-    real, dimension(nx,ny,nz), intent(out) :: output
-
-    character(len=*), intent(in) :: label
-
-    integer :: i,j,k
-
-    output(:,:,:) = 0.0
-
-    DO k=1,nz   ! outer loop
-
-      DO j=2,ny-1
-      DO i=2,nx-1
-
-        output(i,j,k) = (input(i-1,j,k) - 2.0*input(i,j,k) + input(i+1,j,k)) / (dx**2) &
-                      + (input(i,j-1,k) - 2.0*input(i,j,k) + input(i,j+1,k)) / (dy**2)
-
-      ENDDO
-      ENDDO
-
-      DO j = 2,ny-1
-        output(1,j,k)  = (input(nx,  j,  k) - 2.0*input(1, j,k) + input(2, j,  k)) / (dx**2) &
-                       + (input(1,   j-1,k) - 2.0*input(1, j,k) + input(1, j+1,k)) / (dy**2)
-        output(nx,j,k) = (input(nx-1,j,  k) - 2.0*input(nx,j,k) + input(1, j,  k)) / (dx**2) &
-                       + (input(nx,  j-1,k) - 2.0*input(nx,j,k) + input(nx,j+1,k)) / (dy**2)
-      ENDDO
-
-      DO i = 2,nx-1
-        output(i,1,k)  = (input(i-1,   1,k) - 2.0*input(i, 1,k) + input(i+1, 1,k)) / (dx**2) &
-                       + (input(i,  ny-1,k) - 2.0*input(i, 1,k) + input(i,   2,k)) / (dy**2)
-        output(i,ny,k) = (input(i-1,ny,  k) - 2.0*input(i,ny,k) + input(i+1,ny,k)) / (dx**2) &
-                       + (input(i,  ny-1,k) - 2.0*input(i,ny,k) + input(i,   1,k)) / (dy**2)
-      ENDDO
-
-      print *, label, ': ', k, maxval(output(:,:,k)), minval(output(:,:,k))
-
-    ENDDO
-
-    RETURN
-
-    END SUBROUTINE DELSQH
-
 
 !=================== Write netCDF ==========================
 
@@ -475,31 +412,3 @@
 
     return
     end
-!=========================================================
-
-subroutine writemxmn(array, nx, ny, nz, label)
-
-  implicit none
-  integer, intent(in)                   :: nx,ny,nz
-  real, dimension(nx,ny,nz), intent(in) :: array
-  character(len=*), intent(in)          :: label
-
-  real thesum, theavg, stddev
-
-  thesum = SUM(array)
-
-  theavg = thesum / float(nx*ny*nz)
-
-  stddev = SUM( (array - theavg)**2 )
-
-  stddev=sqrt(stddev/float(nx*ny*nz))
-
-  write(6,*)
-
-  write(6,FMT='(" ---> VAR: ",a,2x,"MAX: ",g10.2,2x,"MIN: ",g10.2,2x,"STDDEV: " g10.2)') label, &
-                maxval(array), minval(array), stddev
-
-  write(6,*)
-
-  return
-  end

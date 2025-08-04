@@ -34,7 +34,7 @@
 
 !-----------------------------------------------------------------------
 
-    real, dimension(:,:,:,:),allocatable :: rhs, soln
+    real, dimension(:,:,:,:),allocatable :: rhs, soln, den
 
     integer  :: i,j,k,n
 
@@ -64,11 +64,11 @@
 !----------------- 3D field names for output netCDF4 file --------------------!
 
     var_names(1) = "forcing"
-    var_names(2) = "beta   "
+    var_names(2) = "Pb     "
 
 !----------------- Read namelist in --------------------!
 
-    write(*,*) ' ---> Retrieve_Beta: Parsing Command Line arguments'
+    write(*,*) ' ---> Retrieve_PressureBuoy: Parsing Command Line arguments'
 
     narg = 0
 
@@ -92,14 +92,14 @@
         end select
     end do
 
-    write(*,*) ' ---> Retrieve_Beta: Reading dims and attrs'
+    write(*,*) ' ---> Retrieve_Pb: Reading dims and attrs'
 
     CALL READ_NC4_DIMS( infile, nt, nx, ny, nz )
 
     CALL READ_NC4_ATT( infile, wbc, ebc, sbc, nbc, model )
 
     write(*,*)
-    write(*,*) ' ---> Retrieve_Beta:  Input parameters\n'
+    write(*,*) ' ---> Retrieve_Pb:  Input parameters\n'
     write(*,*)
     write(*,*) '  source model = ',model
     write(*,*)
@@ -134,19 +134,21 @@
 
     allocate( tmp (nx,ny,nz) )
     allocate( rhs (nx,ny,nz,nt) )
+    allocate( den (nx,ny,nz,nt) )
     allocate( soln(nx,ny,nz,nt) )
 
     tmp (:,:,:)   = 0.0
     rhs (:,:,:,:) = 0.0
     soln(:,:,:,:) = 0.0
+    den (:,:,:,:) = 0.0
 
 !----------------- Read 3D density from input netCDF4 file --------------------!
 
-    write(*,*) ' ---> Retrieve_Beta: Reading in 3D density'
+    write(*,*) ' ---> Retrieve_Pb: Reading in 3D buoyancy'
 
-    CALL READ_NC4_FIELD( infile, "den", nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
+    CALL READ_NC4_FIELD( infile, "buoy", nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
 
-    write(*,*) ' ---> Retrieve_Beta: Read in 3D density'
+    write(*,*) ' ---> Retrieve_Pb: Read in 3D buoyancy'
 
 ! assume constant grid in horizontal
 
@@ -157,7 +159,7 @@
 
     DO n = 1,nt
 
-      call writemxmn(rhs(1,1,1,n), nx, ny, nz, 'DENSITY')
+      call writemxmn(rhs(1,1,1,n), nx, ny, nz, 'BUOYANCY')
 
       zf(:,:,:) = 0.0
 
@@ -191,31 +193,34 @@
 
         ENDDO
 
-! Set boundary conditions for beta=0 at ground, this is a reflective bc
+! Set boundary conditions for d(pb)/dz = - rho*B
 
-        btri(i,j, 1) = btri(i,j, 1) - atri(i,j, 1) 
-        btri(i,j,nz) = btri(i,j,nz) - ctri(i,j,nz) 
+!       btri(i,j, 1) = -atri(i,j, 1) 
+
+!       btri(i,j, 1) = btri(i,j, 1) + (atri(i,j, 1) * den(1,1,1, 1) * rhs(i,j, 1,1) / mfe(i,j, 1))
+
+!       btri(i,j,nz) = -ctri(i,j,nz)
+
+!       btri(i,j,nz) = btri(i,j,nz) - (ctri(i,j,nz) * den(1,1,nz,1) * rhs(i,j,nz,1) / mfe(i,j,nz)) 
 
       ENDDO
       ENDDO
 
-! Call Horizontal laplacian operator
+! Call vertical differentiation
 
-      write(*,*) ' ---> Retrieve_Beta: Computing laplacian of density'
+      write(*,*) ' ---> Retrieve_Pb: Computing den * del(B) / del(z) '
 
-      call DELSQH(rhs(1,1,1,n), tmp, dx, dy, nx, ny, nz)
+      call DELZ(rhs(1,1,1,n), tmp, dx, dy, mfe, mfc, nx, ny, nz)
 
-      call writemxmn(tmp, nx, ny, nz, 'LAPLACIAN of DENSITY')
-
-      tmp(:,:,:) = -grav * tmp(:,:,:)
+      call writemxmn(tmp, nx, ny, nz, 'VERTICAL DERIVATIVE of BUOYANCY')
 
 ! Solve elliptic system for Beta
 
-      write(*,*) ' ---> Retrieve_Beta: Ready to solve elliptic system for Time: ',time(n)
+      write(*,*) ' ---> Retrieve_Pb: Ready to solve elliptic system for Time: ',time(n)
 
       call SOLVE_ELLIP(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, tmp, soln(1,1,1,n))
 
-      write(*,*) ' ---> Retrieve_Beta:  Finished computing BETA for Time: ',time(n)
+      write(*,*) ' ---> Retrieve_Pb:  Finished computing BETA for Time: ',time(n)
 
       call writemxmn(soln(1,1,1,n), nx, ny, nz, var_names(2))
 

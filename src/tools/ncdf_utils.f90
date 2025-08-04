@@ -140,7 +140,7 @@
 !
 !===========================================================
 
-    SUBROUTINE READ_NC4_FILE( filename, nt, nx, ny, nz, xc, yc, zc, time, den ) 
+    SUBROUTINE READ_NC4_FIELD( filename, var_name, nt, nx, ny, nz, xc, yc, zc, time, array ) 
 
     use netcdf
 
@@ -148,12 +148,13 @@
 
     integer, intent(in) :: nt, nx, ny, nz
     character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: var_name
 
     real, dimension(nx), intent(out) :: xc
     real, dimension(ny), intent(out) :: yc
     real, dimension(nt), intent(out) :: time
 
-    real, dimension(nt,nx,ny,nz), intent(out) :: den, zc
+    real, dimension(nt,nx,ny,nz), intent(out) :: array, zc
 
     integer :: k
     integer :: varid, ncid, status
@@ -180,13 +181,13 @@
 
 !----------Get 3D variables needed from netcdf----------------
 
-    status = nf90_inq_varid(ncid,"den",varid)
+    status = nf90_inq_varid(ncid,var_name,varid)
 
     IF( status /= nf90_NoErr) THEN
-        write(*,*) ' ----> Retrieve_Beta/READNC2: No 3D density in file, stopping'
+        write(*,*) ' ----> READ_NC4_FIELD: No 3D ',var_name,' in file, stopping'
         stop 999
     ELSE
-      status = nf90_get_var(ncid,varid,den,start=(/1,1,1,1/),count=(/nx,ny,nz,nt/))
+      status = nf90_get_var(ncid,varid,array,start=(/1,1,1,1/),count=(/nx,ny,nz,nt/))
     ENDIF
 
 !------------------Close netCDF----------------------------
@@ -194,7 +195,7 @@
     status = nf90_close(ncid)
 
     RETURN
-    END SUBROUTINE READ_NC4_FILE
+    END SUBROUTINE READ_NC4_FIELD
 
 !===========================================================
 !

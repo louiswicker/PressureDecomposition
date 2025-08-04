@@ -34,6 +34,10 @@ FOPTS = -g -O0 -fbacktrace -fcheck=all -w -Wall -Wno-unused-parameter
 
 #################################################################################
 
+retrievepb:   $(OBFILES) retrievepb.o
+		$(F90) $(FOPTS) -o retrievepb.exe retrievepb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+		cp retrievepb.exe ../run/retrievepb.exe
+
 retrievebeta:   $(OBFILES) retrievebeta.o
 		$(F90) $(FOPTS) -o retrievebeta.exe retrievebeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 		cp retrievebeta.exe ../run/retrievebeta.exe
@@ -43,6 +47,9 @@ testbeta:   $(OBFILES) testbeta.o
 
 testpb:     $(OBFILES) testpb.o
 		$(F90) $(FOPTS) -o testpb.exe testpb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+
+retrievepb.o:  main/retrievepb.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 retrievebeta.o:  main/retrievebeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
