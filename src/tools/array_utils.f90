@@ -93,13 +93,13 @@
 !
 !=========================================================
 
-  SUBROUTINE DELZ(input, output, mfe, mfc, nx, ny, nz)
+  SUBROUTINE DELZ(input, output, mfe, nx, ny, nz)
 
     implicit none
 
     integer, intent(in) :: nx, ny, nz
 
-    real, dimension(nx,ny,nz), intent(in)  :: mfe, mfc
+    real, dimension(nx,ny,nz+1), intent(in)  :: mfe
 
     real, dimension(nx,ny,nz), intent(in)  :: input
 

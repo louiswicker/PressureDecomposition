@@ -144,9 +144,9 @@
 
 !----------------- Read 3D density from input netCDF4 file --------------------!
 
-    write(*,*) ' ---> Retrieve_Pb: Reading in 3D buoyancy'
+    write(*,*) ' ---> Retrieve_Pb: Reading in 3D Rbuoyancy'
 
-    CALL READ_NC4_FIELD( infile, "buoy", nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
+    CALL READ_NC4_FIELD( infile, "rbuoy", nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
 
     write(*,*) ' ---> Retrieve_Pb: Read in 3D buoyancy'
 
@@ -210,7 +210,7 @@
 
       write(*,*) ' ---> Retrieve_Pb: Computing den * del(B) / del(z) '
 
-      call DELZ(rhs(1,1,1,n), tmp, dx, dy, mfe, mfc, nx, ny, nz)
+      call DELZ(rhs(1,1,1,n), tmp, mfe, nx, ny, nz)
 
       call writemxmn(tmp, nx, ny, nz, 'VERTICAL DERIVATIVE of BUOYANCY')
 

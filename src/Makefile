@@ -7,6 +7,7 @@ VPATH=main:test:tools
 
 # Fortran compiler
 F90=gfortran
+F90=mpif90
 
 # Locations of netcdf include files and libraries
 
@@ -28,9 +29,9 @@ OBFILES = bc.o singleton.o solve_ellip.o array_utils.o ncdf_utils.o
 OUTPUTOPT = -DNETCDF
 LINKOPTS  = -lnetcdff
 
-FOPTS = -O2 -fcheck=bounds -Wno-unused-parameter 
-
 FOPTS = -g -O0 -fbacktrace -fcheck=all -w -Wall -Wno-unused-parameter 
+
+FOPTS = -O2 -fcheck=bounds -Wno-unused-parameter 
 
 #################################################################################
 
