@@ -1,6 +1,7 @@
-# README for p_decomp program
+# README for pressure decomposition codes
 
-> written by Lou Wicker, October 2024
+> Reorganized by Lou Wicker, October 2024
+> Last updated by Lou Wicker, September 2026
 
 # Contents
 
