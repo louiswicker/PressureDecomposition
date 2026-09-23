@@ -6,7 +6,7 @@
 !===========================================================
 
 
-    SUBROUTINE WRITE_NC4_FILE(filename, nt, nx, ny, nz, x, y, z, time, var, label)
+    SUBROUTINE WRITE_NC4_FILE(filename, nt, nx, ny, nz, x, y, z, time, var, label, fourD)
 
     USE netcdf
 
@@ -21,7 +21,9 @@
     real, dimension(nx,ny,nz,nt), intent(in) :: z
     real, dimension(nt), intent(in)          :: time
 
-    character(len=10),   intent(in)          :: label
+    character(len=7), intent(in)             :: label(nt)
+    
+    logical, intent(in) :: fourD
 
 ! Local declarations
 
@@ -31,10 +33,10 @@
     integer :: nxDimID, nyDimID, nzDimID, ntDimID
     integer ::  xVarID,  yVarID,  zVarID,  tVarID
 
-    integer :: VarID
-
+    integer :: VarID, VarID_split(nt)
+    
     real, dimension(nx,ny,nz) :: tmp
-
+    
 !----------------- Create and open netCDF -----------------
 
     status = nf90_create(trim(filename),NF90_64BIT_OFFSET,ncid)
@@ -60,16 +62,31 @@
 
     status = nf90_def_var(ncid,"yh",nf90_float,(/nyDimID/), yVarID)
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+    
+    if ( fourD ) then
 
-    status = nf90_def_var(ncid,"zh",nf90_float,(/nxDimID,nyDimID,nzDimID,ntDimID/), zVarID)
-    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+      status = nf90_def_var(ncid,"zh",nf90_float,(/nxDimID,nyDimID,nzDimID,ntDimID/), zVarID)
+      if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+    
+      status = nf90_def_var(ncid,"time",nf90_float,(/ntDimID/), tVarID)
+      if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
 
-    status = nf90_def_var(ncid,"time",nf90_float,(/ntDimID/), tVarID)
-    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+      status = nf90_def_var(ncid, label(1), nf90_float,(/nxDimID,nyDimID,nzDimID,ntDimID/),VarID)
+      if(status /= nf90_NoErr) write(*,*) label(1), nf90_strerror(status)
+      
+    else
+    
+      status = nf90_def_var(ncid,"zh",nf90_float,(/nxDimID,nyDimID,nzDimID/), zVarID)
+      if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+      
+      do n = 1,nt
+      
+        status = nf90_def_var(ncid, label(n), nf90_float, (/nxDimID,nyDimID,nzDimID/),VarID_split(n))
+        if(status /= nf90_NoErr) write(*,*) label(n), nf90_strerror(status)
+      
+      enddo
 
-    status = nf90_def_var(ncid,label,nf90_float, &
-                           (/nxDimID,nyDimID,nzDimID,ntDimID/),VarID)
-    if(status /= nf90_NoErr) write(*,*) label, nf90_strerror(status)
+    endif
 
     status = nf90_enddef(ncid)
 
@@ -83,14 +100,32 @@
     status = nf90_put_var(ncid, yVarID, y)
     if(status /= nf90_NoErr) write(*,*) 'Y-COORD: ', nf90_strerror(status)
 
-    status = nf90_put_var(ncid, zVarID, z)
-    if(status /= nf90_NoErr) write(*,*) 'Z-COORD: ', nf90_strerror(status)
+    if ( fourD ) then
+    
+      status = nf90_put_var(ncid, zVarID, z)
+      if(status /= nf90_NoErr) write(*,*) 'Z-COORD: ', nf90_strerror(status)
 
-    status = nf90_put_var(ncid, tVarID, time)
-    if(status /= nf90_NoErr) write(*,*) 'TIME-COORD: ', nf90_strerror(status)
+      status = nf90_put_var(ncid, tVarID, time)
+      if(status /= nf90_NoErr) write(*,*) 'TIME-COORD: ', nf90_strerror(status)
 
-    status = nf90_put_var(ncid, VarID, var)
-    if(status /= nf90_NoErr) write(*,*) label, nf90_strerror(status)
+      status = nf90_put_var(ncid, VarID, var)
+      if(status /= nf90_NoErr) write(*,*) label(1), nf90_strerror(status)
+      
+    else
+    
+      status = nf90_put_var(ncid, zVarID, z(1,1,1,1))
+      if(status /= nf90_NoErr) write(*,*) 'Z-COORD: ', nf90_strerror(status)
+
+      do n = 1,nt
+      
+        tmp(:,:,:) = var(:,:,:,n)
+        
+        status = nf90_put_var(ncid, VarID_split(n), tmp)
+        if(status /= nf90_NoErr) write(*,*) label(n), nf90_strerror(status)
+      
+      enddo
+
+    endif
 
     status = nf90_close(ncid)
 
@@ -105,7 +140,7 @@
 !
 !===========================================================
 
-    SUBROUTINE READ_NC4_FILE( filename, nt, nx, ny, nz, xc, yc, zc, time, den ) 
+    SUBROUTINE READ_NC4_FIELD( filename, var_name, nt, nx, ny, nz, xc, yc, zc, time, array ) 
 
     use netcdf
 
@@ -113,12 +148,13 @@
 
     integer, intent(in) :: nt, nx, ny, nz
     character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: var_name
 
     real, dimension(nx), intent(out) :: xc
     real, dimension(ny), intent(out) :: yc
     real, dimension(nt), intent(out) :: time
 
-    real, dimension(nt,nx,ny,nz), intent(out) :: den, zc
+    real, dimension(nt,nx,ny,nz), intent(out) :: array, zc
 
     integer :: k
     integer :: varid, ncid, status
@@ -145,13 +181,13 @@
 
 !----------Get 3D variables needed from netcdf----------------
 
-    status = nf90_inq_varid(ncid,"den",varid)
+    status = nf90_inq_varid(ncid,var_name,varid)
 
     IF( status /= nf90_NoErr) THEN
-        write(*,*) ' ----> Retrieve_Beta/READNC2: No 3D density in file, stopping'
+        write(*,*) ' ----> READ_NC4_FIELD: No 3D ',var_name,' in file, stopping'
         stop 999
     ELSE
-      status = nf90_get_var(ncid,varid,den,start=(/1,1,1,1/),count=(/nx,ny,nz,nt/))
+      status = nf90_get_var(ncid,varid,array,start=(/1,1,1,1/),count=(/nx,ny,nz,nt/))
     ENDIF
 
 !------------------Close netCDF----------------------------
@@ -159,7 +195,7 @@
     status = nf90_close(ncid)
 
     RETURN
-    END SUBROUTINE READ_NC4_FILE
+    END SUBROUTINE READ_NC4_FIELD
 
 !===========================================================
 !
@@ -176,20 +212,23 @@
     integer, intent(out) :: nt, nx, ny, nz
     character(len=*), intent(in) :: filename
  
-    integer :: status, ncid, dimid
+    integer :: status, ncid, dimid, recorddimid
  
 !------------------Open netCDF-----------------------------
  
-    status = nf90_open(trim(filename),nf90_nowrite,ncid)
+    status = nf90_open(trim(filename),nf90_nowrite, ncid)
  
     if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
  
 ! Read NT (unlimited dimension)
  
-    status = nf90_inquire(ncid, unlimiteddimid = dimid)
-    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
-    status = nf90_inquire_dimension(ncid, dimid, len = nt)
-    if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
+    status = nf90_inquire( ncid, unlimiteddimid = recorddimid)
+    if (status /= nf90_noerr) write(*,*) 'No unlimited dimension, ', nf90_strerror(status)
+
+    if (status /= nf90_noerr) write(*,*) "Cannot find NT, ", nf90_strerror(status)
+
+    status = nf90_inquire_dimension(ncid, recorddimid, len = nt)
+    if (status /= nf90_noerr) write(*,*) "Cannot read number of records, ", nf90_strerror(status)
  
 ! Read NZ
  
@@ -215,7 +254,7 @@
     status = nf90_close(ncid)
     if (status /= nf90_noerr) write(*,*) nf90_strerror(status)
  
-!   WRITE(6,*) nx, ny, nz, nt
+    WRITE(6,*) nx, ny, nz, nt
 
     RETURN
     END SUBROUTINE READ_NC4_DIMS
@@ -278,3 +317,78 @@
 
     RETURN
     END SUBROUTINE READ_NC4_ATT
+
+!=================== Write netCDF2 ==========================
+
+    subroutine writenc2(filename, nx, ny, nz, nv, vars, labels)
+
+    USE netcdf
+
+    implicit none
+ 
+    character(len=*),          intent(in) :: filename
+    integer,                   intent(in) :: nx, ny, nz, nv
+
+    real, dimension(nx,ny,nz,nv), intent(in) :: vars
+
+    character(len=10), dimension(nv), intent(in) :: labels
+
+! Local declarations
+
+    integer :: n
+
+    integer :: ncid,status,niDimID,njDimID,nkDimID,timeDimID
+
+    integer, dimension(nv) :: VarID
+
+    real, dimension(nx,ny,nz) :: tmp
+
+!----------------- Create and open netCDF -----------------
+
+    status = nf90_create(trim(filename),NF90_64BIT_OFFSET,ncid)
+
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+!------------ Define dimensions and variables -------------
+
+    status = nf90_def_dim(ncid,"nx",nx,niDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+    
+    status = nf90_def_dim(ncid,"ny",ny,njDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    status = nf90_def_dim(ncid,"nz",nz,nkDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    status = nf90_def_dim(ncid,"time",1,timeDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    DO n = 1,nv
+
+      status = nf90_def_var(ncid,labels(n),nf90_float, &
+                           (/niDimID,njDimID,nkDimID/),VarID(n))
+                       !   (/niDimID,njDimID,nkDimID,timeDimID/),VarID(n))
+      if(status /= nf90_NoErr) write(*,*) labels(n), nf90_strerror(status)
+
+    ENDDO
+
+    status = nf90_enddef(ncid)
+
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+!------------ Write dimensions and variables -------------
+    DO n = 1,nv
+
+      tmp(:,:,:) = vars(:,:,:,n)
+
+      status = nf90_put_var(ncid, VarID(n), tmp)
+      if(status /= nf90_NoErr) write(*,*) labels(n), nf90_strerror(status)
+
+    ENDDO
+
+    status = nf90_close(ncid)
+
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    return
+    end

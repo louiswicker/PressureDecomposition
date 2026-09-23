@@ -56,19 +56,30 @@
 
     real               :: dx, dy
 
-    character*10       :: var_names
+
+    character(len=7), dimension(2) :: var_names
 
     real, parameter :: grav = 9.806
 
 !----------------- 3D field names for output netCDF4 file --------------------!
 
-    var_names = "Soln_Beta "
+    var_names(1) = "forcing"
+    var_names(2) = "beta   "
 
 !----------------- Read namelist in --------------------!
 
     write(*,*) ' ---> Retrieve_Beta: Parsing Command Line arguments'
 
     narg = 0
+
+    IF ( command_argument_count() < 4 ) THEN
+
+     write(*,*) ' ----> Error, not enough command line args'
+     write(*,*) ' ----> Usage:'
+     write(*,*) ' ----> retrievebeta.exe -i input.ncdf -o output.ncdf:'
+     STOP
+
+    ENDIF
 
     do while ( narg  <  command_argument_count() )
 
@@ -142,7 +153,7 @@
 
     write(*,*) ' ---> Retrieve_Beta: Reading in 3D density'
 
-    CALL READ_NC4_FILE( infile, nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
+    CALL READ_NC4_FIELD( infile, "den", nt, nx, ny, nz, xh, yh, zh, time, rhs ) 
 
     write(*,*) ' ---> Retrieve_Beta: Read in 3D density'
 
@@ -215,7 +226,7 @@
 
       write(*,*) ' ---> Retrieve_Beta:  Finished computing BETA for Time: ',time(n)
 
-      call writemxmn(soln(1,1,1,n), nx, ny, nz, var_names)
+      call writemxmn(soln(1,1,1,n), nx, ny, nz, var_names(2))
 
     ENDDO  ! time loop
 
@@ -226,7 +237,7 @@
 
     write(*,*) ' ---> Retrieve_Beta::  Writing netCDF4 to outfile'
 
-    call WRITE_NC4_FILE(outfile, nt, nx, ny, nz, xh, yh, zh, time, soln, var_names)
+    call WRITE_NC4_FILE(outfile, nt, nx, ny, nz, xh, yh, zh, time, soln, var_names(2), .true.)
 
     write(*,*) ' ---> Retrieve_Beta::  Wrote netCDF4 to outfile'
 

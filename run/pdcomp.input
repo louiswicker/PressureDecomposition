@@ -3,13 +3,13 @@
 !----------------------------!
 
 &inputs
-  infile = './cm1tmp.nc',  ! Filepath for CM1 output
+  infile = './input-001000.nc',  ! Filepath for CM1 output
   outfile = './pdcomp.nc', ! Filepath for pdcomp output
 
   ! Grid information
-  nx = 64    ! Number of x-grid points in domain
-  ny = 64    ! Number of y-grid points in domain
-  nz = 60    ! Number of z-grid points in domain
+  nx = 20    ! Number of x-grid points in domain
+  ny = 20    ! Number of y-grid points in domain
+  nz = 50    ! Number of z-grid points in domain
   dx = 3000  ! x-grid spacing
   dy = 3000  ! y-grid spacing
 

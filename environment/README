@@ -1,0 +1,15 @@
+This conda environment file can be used to create a
+gfortran and netCDF env to compile pressure_decomp.  
+
+It also can be used to compile CM1 itself.
+
+If you have a conda environment installed for python,
+
+"conda env create -f p_decomp.yml"
+
+will create a new environment with the compilers and netCDF,
+
+"conda activate p_decomp"
+
+will activate the environment.  Then you can use the 
+Makefile in the main directory

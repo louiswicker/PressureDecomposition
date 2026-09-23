@@ -10,7 +10,7 @@
 
   integer, intent(in)                       :: nx, ny, nz
   integer, intent(in)                       :: wbc, ebc, sbc, nbc
-  real,    intent(in)                       :: dx,dy
+  real,    intent(in)                       :: dx, dy
   real,    intent(in),  dimension(nx,ny,nz) :: atri, ctri, btri
   real,    intent(in),  dimension(nx,ny,nz) :: rhs3d
   real,    intent(out), dimension(nx,ny,nz) :: sol3d
@@ -69,7 +69,7 @@
 
   integer :: i,j,k,nloop,ipb,ipe,jpb,jpe,kpb,kpe,imirror,jmirror
   real    :: rdx,rdy
-  real*8 :: dpi,pavg,frac
+  real*8  :: dpi,pavg,frac
   real, dimension(0:nz+1) :: thr0
   real, dimension(:,:,:), allocatable :: dum1,dum2,dum3,divx,uten,vten,wten,buoy
 
@@ -133,6 +133,8 @@
     stop 1115
   endif
 
+
+  write(*,*) 'Begin ELLIP', minval(rhs3d), maxval(rhs3d)
 !-----------------------------------------------------------------------
 
 
@@ -371,7 +373,7 @@
   enddo
   enddo
   enddo
-
+  
   deallocate(deft)
 
   RETURN

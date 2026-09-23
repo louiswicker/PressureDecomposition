@@ -10,7 +10,7 @@
     real, dimension(nx,ny,nz), intent(in) :: array
     character(len=*), intent(in)          :: label
 
-    real thesum, theavg, stddev
+    real*8 thesum, theavg, stddev
 
     thesum = SUM(array)
 
@@ -86,3 +86,52 @@
   RETURN
 
   END SUBROUTINE DELSQH
+
+!=========================================================
+!
+! DELZ:  A vertical gradient operator
+!
+!=========================================================
+
+  SUBROUTINE DELZ(input, output, mfe, nx, ny, nz)
+
+    implicit none
+
+    integer, intent(in) :: nx, ny, nz
+
+    real, dimension(nx,ny,nz+1), intent(in)  :: mfe
+
+    real, dimension(nx,ny,nz), intent(in)  :: input
+
+    real, dimension(nx,ny,nz), intent(out) :: output
+
+    integer :: i,j,k
+
+    output(:,:,:) = 0.0
+
+    DO k=2,nz-1   ! outer loop
+
+      DO j=1,ny
+      DO i=1,nx
+
+        output(i,j,k) = 0.5 * mfe(i,j,k+1)  * (input(i,j,k+1) - input(i,j,k))  &
+                            + mfe(i,j,k  )  * (input(i,j,k  ) - input(i,j,k-1) )
+
+      ENDDO
+      ENDDO
+
+    ENDDO
+
+    DO j=1,ny
+    DO i=1,nx
+
+        output(i,j, 1) = 0.5 * mfe(i,j,2)  * (input(i,j, 2) - input(i,j, 1))
+
+        output(i,j,nz) = 0.5 * mfe(i,j,nz) * (input(i,j,nz) - input(i,j,nz-1))
+
+    ENDDO
+    ENDDO
+
+  RETURN
+
+  END SUBROUTINE DELZ

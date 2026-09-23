@@ -3,8 +3,11 @@
 #---------------------#
 #  Config variables   #
 
+VPATH=main:test:tools
+
 # Fortran compiler
 F90=gfortran
+F90=mpif90
 
 # Locations of netcdf include files and libraries
 
@@ -26,14 +29,21 @@ OBFILES = bc.o singleton.o solve_ellip.o array_utils.o ncdf_utils.o
 OUTPUTOPT = -DNETCDF
 LINKOPTS  = -lnetcdff
 
-FOPTS = -O2 -fcheck=bounds -Wno-unused-parameter 
-
 FOPTS = -g -O0 -fbacktrace -fcheck=all -w -Wall -Wno-unused-parameter 
+
+FOPTS = -O2 -fcheck=bounds -Wno-unused-parameter 
 
 #################################################################################
 
+all:	retrievepb retrievebeta testbeta testpb
+
+retrievepb:   $(OBFILES) retrievepb.o
+		$(F90) $(FOPTS) -o retrievepb.exe retrievepb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+		cp retrievepb.exe ../run/retrievepb.exe
+
 retrievebeta:   $(OBFILES) retrievebeta.o
 		$(F90) $(FOPTS) -o retrievebeta.exe retrievebeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
+		cp retrievebeta.exe ../run/retrievebeta.exe
 
 testbeta:   $(OBFILES) testbeta.o
 		$(F90) $(FOPTS) -o testbeta.exe testbeta.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
@@ -41,29 +51,32 @@ testbeta:   $(OBFILES) testbeta.o
 testpb:     $(OBFILES) testpb.o
 		$(F90) $(FOPTS) -o testpb.exe testpb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
 
-retrievebeta.o:   retrievebeta.f90
+retrievepb.o:  main/retrievepb.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-testbeta.o:   testbeta.f90
+retrievebeta.o:  main/retrievebeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-testpb.o:   testpb.f90
+testbeta.o: test/testbeta.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-array_utils.o: array_utils.f90
+testpb.o:   test/testpb.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-ncdf_utils.o:  ncdf_utils.f90
+array_utils.o: tools/array_utils.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-bc.o:       bc.f90
-		$(F90) -c $(FOPTS) bc.f90 
+ncdf_utils.o: tools/ncdf_utils.f90
+		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-singleton.o:   singleton.f90
-		$(F90) -c $(FOPTS) singleton.f90 
+bc.o:       tools/bc.f90
+		$(F90) -c $(FOPTS) $<
 
-solve_ellip.o:	solve_ellip.f90
-		$(F90) -c $(FOPTS) solve_ellip.f90 
+singleton.o: tools/singleton.f90
+		$(F90) -c $(FOPTS) $<
+
+solve_ellip.o: tools/solve_ellip.f90
+		$(F90) -c $(FOPTS) $<
 
 clean:
 		rm -rf *.o *.mod *.exe

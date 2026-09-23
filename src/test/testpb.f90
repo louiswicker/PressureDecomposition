@@ -1,5 +1,5 @@
 
-    PROGRAM TEST_BETA
+    PROGRAM TEST_PB
 
     use netcdf
 
@@ -45,9 +45,9 @@
     integer, parameter :: nx = 21
     integer, parameter :: ny = 21
     integer, parameter :: nz = 40
-    integer, parameter :: nv = 2
+    integer, parameter :: nv = 4
 
-    integer, parameter :: pow = 4
+    integer, parameter :: pow = 2
 
     real,    parameter :: dx = 250.
     real,    parameter :: dy = 250.
@@ -57,10 +57,10 @@
 
     integer  :: i,j,k,n
 
-    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe, atri, btri, ctri, tmpz
+    real, dimension(:),allocatable :: xh, yh, zf, zh, mfc, mfe, tmpz
     real, dimension(:),allocatable :: prs0, u0, v0, rho0, pi0, th0, qv0, thv0, rhoE
 
-    real, dimension(:,:,:),allocatable :: u, v, w, tmp
+    real, dimension(:,:,:),allocatable :: u, v, w, tmp, atri, btri, ctri
 
     real, dimension(:,:,:),allocatable :: qvpert,thpert,thv,prspert
 
@@ -73,9 +73,7 @@
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
 
-    character*12, parameter :: outfile = "beta_test_out.nc"
-    character*10, parameter :: testfile = "beta_in.nc   "
-
+    character*10, parameter :: outfile = "Test_Pb.nc"
     character*10, dimension(nv) :: var_names
 
     real :: pii 
@@ -109,14 +107,20 @@
     real, parameter :: cvdrd  = cv/rd
     real, parameter :: cpdrd  = cp/rd
 
-    var_names(1) = "IC_Beta   "
-    var_names(2) = "Soln_Beta "
+    var_names(1) = "IC_Buoy   "
+    var_names(2) = "Soln_Pb   "
+    var_names(3) = "VPGF      "
+    var_names(4) = "Beta Sum  "
 
     pii = 4.0*atan(1.0)
 
 !-----------------Read netCDF--------------------
 
-    write(*,*) ' ---> TestPP'
+    write(*,*) '----------------------------'
+    write(*,*)
+    write(*,*) ' ---> Program TEST_PB'
+    write(*,*)
+    write(*,*) '----------------------------'
 
     allocate( xh(nx) )
     allocate( yh(ny) )
@@ -134,12 +138,13 @@
     allocate( mfc(nz) )
     allocate( mfe(nz+1) )
 
+    allocate( tmpz(nz+1) )
+
 ! Tridiagonal coefficients
 
-    allocate( atri(nz+1) )
-    allocate( btri(nz) )
-    allocate( ctri(nz+1) )
-    allocate( tmpz(nz+1) )
+    allocate( atri(nx,ny,nz+1) )
+    allocate( btri(nx,ny,nz) )
+    allocate( ctri(nx,ny,nz+1) )
 
     allocate( u(nx,ny,nz) )
     allocate( v(nx,ny,nz) )
@@ -216,34 +221,9 @@
      yh(j) = -(ny/2)*dy + float(j-1) * dy
     ENDDO
 
-! Compute tridiagonal coefficients for pressure/density formulation
+!------- Compute 3D state buoayncy forcing similar to J&R 2015
 
-    rhoE(:) = 0.0
-
-    DO k = 2,nz
-       rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
-    ENDDO
-
-    rhoE(1)    = rho0(1)  ! These depend on boundary condition
-    rhoE(nz+1) = rho0(nz)
-
-    DO k = 1,nz
-
-!      atri(k) = mfc(k)*mfe(k)*rhoE(k) / (dz*dz*rho0(k))
-!      ctri(k) = mfc(k)*mfe(k+1)*rhoE(k+1) / (dz*dz*rho0(k))
-!      btri(k) = - atri(k) - ctri(k)
-
-       atri(k) = mfc(k)*mfe(k) / (dz*dz)
-
-       ctri(k) = mfc(k)*mfe(k+1) / (dz*dz)
-
-       btri(k) = - atri(k) - ctri(k)
-
-    ENDDO
-    
-!------- Compute 3D state using J & R 2015
-
-    write(*,*) ' ---> TEST_BETA: computing full state density'
+    write(*,*) ' ---> TEST_Pb: computing RHS'
 
 ! Calculate buoyancy
 
@@ -255,51 +235,103 @@
         hradius = sqrt((xh(i) - xc)**2 + (yh(j) - yc)**2 )
         zradius = sqrt((zh(k) - zc)**2)
 
-        rhs(i,j,k,1) = rho0(k) - rho0(1)/drho * exp( -(hradius/radh)**pow - (zradius/radz)**pow)  ! J&R pp. 3202
+        rhs(i,j,k,1) = g * dthea * exp( -(hradius/radh)**pow - (zradius/radz)**pow)
 
     ENDDO
     ENDDO
+
+    ENDDO
+
+! Compute tridiagonal coefficients for pressure/density formulation
+
+    rhoE(:) = 0.0
+
+    DO k = 2,nz
+       rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
+    ENDDO
+
+    rhoE(1)    = rho0(1)  + 0.5*(rho0(2)  - rho0(1)   )  ! Extrapolate density to edges of grid
+    rhoE(nz+1) = rho0(nz) - 0.5*(rho0(nz) - rho0(nz-1))
+
+    DO k = 1,nz
+
+       atri(:,:,k) = mfc(k)*mfe(k)   / (dz*dz)
+
+       ctri(:,:,k) = mfc(k)*mfe(k+1) / (dz*dz)
+
+       btri(:,:,k) = - atri(:,:,k) - ctri(:,:,k)
 
     ENDDO
     
-! Write out field so we can test the retrieve program...
+! Set new btri for first and last row B-coeffs for Dirichet dp_b/dz=den*B 
 
-    call writenc2(testfile, nx, ny, nz, 1, xh, yh, zh, rhs, 'den')
+    btri(:,:, 1) = btri(:,:, 1) + atri(:,:, 1)
+    btri(:,:,nz) = btri(:,:,nz) + ctri(:,:,nz)
 
-! Call Horizontal laplacian operator
+! Compute del(rho0*B) / del_Z
 
-    call DELSQH(rhs(1,1,1,1), tmp, dx, dy, nx, ny, nz, 'DENSITY')
+    DO j=1,ny
+    DO i=1,nx
 
-    rhs(:,:,:,2) = -g * tmp(:,:,:) 
+! Compute vertical gradient of [rho * buoy] at vertically staggered ('w') level
 
-! Set boundary conditions for beta=0 at ground - reflective boundary condition.
+      DO k=2,nz
+        tmpz(k) = rhoE(k)*(rhs(i,j,k,1) - rhs(i,j,k-1,1)) / dz
+      ENDDO
 
-    btri( 1) = btri( 1) - atri( 1) 
-    btri(nz) = btri(nz) - ctri(nz) 
+! Average back to scalar points
 
-! Solve elliptic system for Beta
+      DO k = 1,nz
+        rhs(i,j,k,2) = 0.5*(tmpz(k+1) + tmpz(k))
+      ENDDO
+ 
+      rhs(i,j, 1,2) = rhs(i,j, 1,2) - atri(i,j,1)*dz*rhs(i,j, 1,1)*rhoE( 1)
+      rhs(i,j,nz,2) = rhs(i,j,nz,2) + ctri(i,j,1)*dz*rhs(i,j,nz,1)*rhoE(nz+1)
 
-    call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(1))
+    ENDDO
+    ENDDO
 
-    write(*,*) ' ---> TEST_BETA:  Solving elliptic system'
+! Solve elliptic system for Pb
 
-    call pdcomp2024(nx, ny, nz, wbc, ebc, sbc, nbc, dx, dy, atri, ctri, btri, rhs(1,1,1,2), tmp)
+    call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(3))
+
+    CALL SOLVE_ELLIP(nx,ny,nz,wbc,ebc,sbc,nbc,dx,dy,atri,ctri,btri,rhs(1,1,1,2),tmp)
 
     rhs(:,:,:,2) = tmp(:,:,:)
 
+    write(*,*) ' ---> TEST_PB: Computed the buoyant pressure from thermodynamic field'
+
     call writemxmn(rhs(1,1,1,2), nx, ny, nz, var_names(2))
 
-    write(*,*) ' ---> TEST_BETA:  Solution to elliptic system finished'
-
-    write(6,FMT='(" ------------------------------------------------------------")')
+    write(6,FMT='(" -------------------------------------------------------------------")')
     write(*,*)
+
+! Use solution for B-pressure, compute vertial gradient, and Beta residual
+
+    DO j=1,ny
+    DO i=1,nx
+
+      DO k=2,nz
+        tmpz(k) = -(rhs(i,j,k,2) - rhs(i,j,k-1,2)) / (rhoE(k)*dz)
+      ENDDO
+
+      tmpz(1)    = rhs(i,j,1,1)
+      tmpz(nz+1) = rhs(i,j,nz,1)
+
+      DO k=1,nz
+        rhs(i,j,k,3) = 0.5*(tmpz(k) + tmpz(k+1)) 
+        rhs(i,j,k,4) = rhs(i,j,k,3) + rhs(i,j,k,1)
+      ENDDO
+
+    ENDDO
+    ENDDO
 
 ! Write data to netCDF-format file:
 
-    write(*,*) ' ---> TEST_BETA:  Writing netCDF4 file'
+    write(*,*) 'TEST_PB:  Before writenc2'
 
-    call writenc2(outfile, nx, ny, nz, 2, xh, yh, zh, rhs, var_names)
+    call writenc2(outfile, nx, ny, nz, nv, rhs, var_names)
 
-    write(*,*) ' ---> TEST_BETA:  Wrote netCDF4 file'
+    write(*,*) 'TEST_PB:  After writenc2'
 
-    END PROGRAM TEST_BETA
+    END PROGRAM TEST_PB
