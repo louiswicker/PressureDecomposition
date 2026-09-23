@@ -4,7 +4,6 @@
 
 # Contents
 
-<<<<<<< HEAD
 1. GENERAL DESCRIPTION
 2. IMPORTANT NOTES
 3. HOW TO RUN
@@ -15,10 +14,7 @@
 - This program was originally created by George Bryan (NCAR) and modified by Jeff Trapp (UIUC) and Geoff Marion (CIWRO). Similar code is implemented
 in CM1, but it is not set up for runs using distributed memory (the majority of CM1 simulations). 
 
-- The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification tridiagonal solution for buoyany pressure.  The maximum effect from this creates solution errors near the lower and upper boundaries.  The dynamic forcing appeared to have the correct vertical boundary condition.
-=======
-Contents:
->>>>>>> main
+- The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification tridiagonal solution for buoyant pressure retrial (which is tricky).  The maximum effect from this creates solution errors near the lower and upper boundaries.  The dynamic forcing appeared to have the correct vertical boundary condition.
 
 - The buoyant pressure retrieval has been correctly and carefully compared to the idealized buoyant forcing tests described in:
 
@@ -28,7 +24,7 @@ Contents:
 
 > Davies-Jones, R., 2003: An expression for effective buoyancy in surroundings with horizontal density gradients. J. Atmos. Sci., 60, 2922–2925, https://doi.org/10.1175/1520-0469(2003)060&#60;2922:aefebi&#62;2.0.co;2.
 
-  <code>&nbsp;</code> and discussed further in 3D storm analyses by:
+  and further discussed in 3D storm analyses by:
 
 > Dawson, D. T., M. Xue, A. Shapiro, J. A. Milbrandt, and A. D. Schenkman, 2016: Sensitivity of Real-Data Simulations of the 3 May 1999 Oklahoma City Tornadic Supercell and Associated Tornadoes to Multimoment Microphysics. Part II: Analysis of Buoyancy and Dynamic Pressure Forces in Simulated Tornado-Like Vortices. J. Atmos. Sci., 73, 1039–1061, https://doi.org/10.1175/JAS-D-15-0114.1.
 
@@ -36,7 +32,6 @@ Contents:
 
 #
 
-<<<<<<< HEAD
 2. IMPORTANT NOTES
 - Program is currently set up to read/write netcdf output. Original
   program only read/write grads.
@@ -65,14 +60,12 @@ Contents:
   representative of this new base state.
 =======
 How to compile PDcomp 
->>>>>>> main
 
 #
 
 It might be easiest to install the hpc conda environment.  I use this environment for a number of projects,
 one can compile CM1 using it as Openmpi is also available.  The file "gcc.env" in this directory is included in the src/Makefile to help specify the fortran commands (debug or otherwise) and the netCDF libs.
 
-<<<<<<< HEAD
 =======
 Installation Using Conda Procedure
 ----------------------------------
@@ -109,5 +102,3 @@ OUTPUTINC =
 LINKOPTS = 
 
 macro definitions, as these are the ones used by the Makefile.  
-
->>>>>>> main
