@@ -66,16 +66,16 @@ testpb.o:   test/testpb.f90
 array_utils.o: tools/array_utils.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
-ncdf_utils.o:  tools/ncdf_utils.f90
+ncdf_utils.o: tools/ncdf_utils.f90
 		$(F90) -c $(FOPTS) $< $(NCINC) $(NCLIB)
 
 bc.o:       tools/bc.f90
 		$(F90) -c $(FOPTS) $<
 
-singleton.o:  main/singleton.f90
+singleton.o: tools/singleton.f90
 		$(F90) -c $(FOPTS) $<
 
-solve_ellip.o:	solve_ellip.f90
+solve_ellip.o: tools/solve_ellip.f90
 		$(F90) -c $(FOPTS) $<
 
 clean:

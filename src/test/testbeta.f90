@@ -42,7 +42,7 @@
     integer, parameter :: nx = 21
     integer, parameter :: ny = 21
     integer, parameter :: nz = 40
-    integer, parameter :: nv = 4
+    integer, parameter :: nv = 2
 
     integer, parameter :: pow = 2
 
@@ -74,9 +74,7 @@
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
 
-    character*16, parameter :: outfile = "test_beta_out.nc"
-    character*16, parameter :: testfile = "test_beta_in.nc"
-
+    character*12, parameter :: outfile = "Test_Beta.nc"
     character*10, dimension(nv) :: var_names
 
     real, dimension(:), allocatable :: time
@@ -112,8 +110,8 @@
     real, parameter :: cvdrd  = cv/rd
     real, parameter :: cpdrd  = cp/rd
 
-    var_names(1) = "Force_Beta"
-    var_names(2) = "Soln_Beta "
+    var_names(1) = "RHS-force "
+    var_names(2) = "Beta_Soln "
 
     pii = 4.0*atan(1.0)
 
@@ -285,10 +283,6 @@
 
     ENDDO
     
-! Write out field so we can test the retrieve program...
-
-    call WRITE_NC4_FILE(testfile, 1, nx, ny, nz, xh, yh, zh3, time, rhs(1,1,1,1), 'den', .true.)
-
 ! Call Horizontal laplacian operator
 
     call DELSQH(rhs(1,1,1,1), tmp, dx, dy, nx, ny, nz, 'DENSITY')
@@ -325,7 +319,7 @@
 
     write(*,*) ' ---> TEST_BETA:  Writing netCDF4 file'
 
-    call WRITE_NC4_FILE(outfile, 2, nx, ny, nz, xh, yh, zh3, time, rhs, var_names, .true.)
+    call writenc2(outfile, nx, ny, nz, nv, rhs, var_names)
 
     write(*,*) ' ---> TEST_BETA:  Wrote netCDF4 file'
 
