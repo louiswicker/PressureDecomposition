@@ -7,10 +7,7 @@
 
 !-----------------------------------------------------------------------
 !
-!  080919:  Program to read CM1 GrADS-format output and calculate
-!           pressure perturbations from the subroutine "pdcomp"
-!
-!  Last modified:  20 February 2013
+!  Code based on CM1 solver code (Bryan 2005)
 !
 !-----------------------------------------------------------------------
 
@@ -30,7 +27,7 @@
   !         1 - Davies-Jones (2003) formulation (Horiz Laplacian of density)
 
 !-----------------------------------------------------------------------
-! Jeevanjee and Romps perturbations
+! Based on Jeevanjee and Romps (2015)
 
     real, parameter :: radh = 1000.
     real, parameter :: radz = 500.
@@ -45,9 +42,9 @@
     integer, parameter :: nx = 21
     integer, parameter :: ny = 21
     integer, parameter :: nz = 40
-    integer, parameter :: nv = 2
+    integer, parameter :: nv = 4
 
-    integer, parameter :: pow = 4
+    integer, parameter :: pow = 2
 
     real,    parameter :: dx = 250.
     real,    parameter :: dy = 250.
@@ -122,7 +119,11 @@
 
 !-----------------Read netCDF--------------------
 
-    write(*,*) ' ---> TestPP'
+    write(*,*) '----------------------------'
+    write(*,*)
+    write(*,*) ' ---> Program TESTBETA'
+    write(*,*)
+    write(*,*) '----------------------------'
 
     allocate( xh(nx) )
     allocate( yh(ny) )
@@ -236,18 +237,14 @@
        rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
     ENDDO
 
-    rhoE(1)    = rho0(1)  ! These depend on boundary condition
-    rhoE(nz+1) = rho0(nz)
+    rhoE(1)    = rho0(1)  + 0.5*(rho0(2)  - rho0(1)   )  ! Extrapolate density to edges of grid
+    rhoE(nz+1) = rho0(nz) - 0.5*(rho0(nz) - rho0(nz-1))
 
     DO k = 1,nz
 
-       atri(k) = mfc(k)*mfe(k)*rhoE(k) / (dz*dz*rho0(k))
+       atri(k) = mfc(k)*mfe(k)  *rhoE(k)   / (dz*dz*rho0(k))
        ctri(k) = mfc(k)*mfe(k+1)*rhoE(k+1) / (dz*dz*rho0(k))
        btri(k) = - atri(k) - ctri(k)
-
-!      atri(k) = mfc(k)*mfe(k) / (dz*dz)
-!      ctri(k) = mfc(k)*mfe(k+1) / (dz*dz)
-!      btri(k) = - atri(k) - ctri(k)
 
     ENDDO
     
@@ -308,6 +305,7 @@
     call writemxmn(rhs(1,1,1,1), nx, ny, nz, var_names(1))
 
     write(*,*)
+
 ! Solve elliptic system for Beta
 
     write(*,*) ' ---> TEST_BETA:  Solving elliptic system'

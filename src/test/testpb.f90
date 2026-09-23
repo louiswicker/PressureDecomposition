@@ -72,8 +72,8 @@
     integer, parameter :: ebc = 1
     integer, parameter :: sbc = 1
     integer, parameter :: nbc = 1
-    character*10, parameter :: outfile = "test_Pb.nc"
 
+    character*10, parameter :: outfile = "test_Pb.nc"
     character*10, dimension(nv) :: var_names
 
     real :: pii 
@@ -116,7 +116,11 @@
 
 !-----------------Read netCDF--------------------
 
-    write(*,*) ' ---> Test_Pb'
+    write(*,*) '----------------------------'
+    write(*,*)
+    write(*,*) ' ---> Program TEST_PB'
+    write(*,*)
+    write(*,*) '----------------------------'
 
     allocate( xh(nx) )
     allocate( yh(ny) )
@@ -246,12 +250,12 @@
        rhoE(k) = 0.5*(rho0(k)+rho0(k-1))
     ENDDO
 
-    rhoE(1)    = rho0(1)  ! These need to be set for the boundary conditions
-    rhoE(nz+1) = rho0(nz)
+    rhoE(1)    = rho0(1)  + 0.5*(rho0(2)  - rho0(1)   )  ! Extrapolate density to edges of grid
+    rhoE(nz+1) = rho0(nz) - 0.5*(rho0(nz) - rho0(nz-1))
 
     DO k = 1,nz
 
-       atri(:,:,k) = mfc(k)*mfe(k) / (dz*dz)
+       atri(:,:,k) = mfc(k)*mfe(k)   / (dz*dz)
 
        ctri(:,:,k) = mfc(k)*mfe(k+1) / (dz*dz)
 
@@ -259,35 +263,30 @@
 
     ENDDO
     
-! Set new btri for first and last rows for dpb/dz= den*dz*B at ground 
+! Set new btri for first and last row B-coeffs for Dirichet dp_b/dz=den*B 
 
-!   btri(:,:, 1) = btri(:,:, 1) + atri(:,:, 1)*dz*rhs(:,:, 1,1)*rho0( 1)
-!   btri(:,:,nz) = btri(:,:,nz) - ctri(:,:,nz)*dz*rhs(:,:,nz,1)*rho0(nz)
-
-!   btri(:,:, 1) = - atri(:,:, 1)
-!   btri(:,:,nz) = - ctri(:,:,nz)
+    btri(:,:, 1) = btri(:,:, 1) + atri(:,:, 1)
+    btri(:,:,nz) = btri(:,:,nz) + ctri(:,:,nz)
 
 ! Compute del(rho0*B) / del_Z
 
     DO j=1,ny
     DO i=1,nx
 
-! Compute vertical gradient of [rho * buoy] first at w-points
-
-      tmpz(1) = 0.0
+! Compute vertical gradient of [rho * buoy] at vertically staggered ('w') level
 
       DO k=2,nz
-        tmpz(k) = (rho0(k)*rhs(i,j,k,1) - rho0(k-1)*rhs(i,j,k-1,1)) / dz
+        tmpz(k) = rhoE(k)*(rhs(i,j,k,1) - rhs(i,j,k-1,1)) / dz
       ENDDO
 
-      tmpz(nz+1) = 0.0
+! Average back to scalar points
 
       DO k = 1,nz
         rhs(i,j,k,2) = 0.5*(tmpz(k+1) + tmpz(k))
       ENDDO
-
-!     rhs(i,j, 1,2) = rhs(i,j, 1,2) - rhs(i,j, 1,1)*rhoE(   1) * mfe(   1) / dz
-!     rhs(i,j,nz,2) = rhs(i,j,nz,2) + rhs(i,j,nz,1)*rhoE(nz+1) * mfe(nz+1) / dz
+ 
+      rhs(i,j, 1,2) = rhs(i,j, 1,2) - atri(i,j,1)*dz*rhs(i,j, 1,1)*rhoE( 1)
+      rhs(i,j,nz,2) = rhs(i,j,nz,2) + ctri(i,j,1)*dz*rhs(i,j,nz,1)*rhoE(nz+1)
 
     ENDDO
     ENDDO
@@ -300,11 +299,11 @@
 
     rhs(:,:,:,2) = tmp(:,:,:)
 
-    write(*,*) ' ---> TEST_Pb --> computed buoyany pressure'
+    write(*,*) ' ---> TEST_PB: Computed the buoyant pressure from thermodynamic field'
 
     call writemxmn(rhs(1,1,1,2), nx, ny, nz, var_names(2))
 
-    write(6,FMT='(" ------------------------------------------------------------")')
+    write(6,FMT='(" -------------------------------------------------------------------")')
     write(*,*)
 
 ! Use solution for B-pressure, compute vertial gradient, and Beta residual
@@ -312,16 +311,15 @@
     DO j=1,ny
     DO i=1,nx
 
-      tmpz(1) = rhs(i,j,1,1)*rhoE(1)
-
       DO k=2,nz
-        tmpz(k) = -(rho0(k)*rhs(i,j,k,2) - rho0(k-1)*rhs(i,j,k-1,2)) / dz
+        tmpz(k) = -(rhs(i,j,k,2) - rhs(i,j,k-1,2)) / (rhoE(k)*dz)
       ENDDO
 
-      tmpz(nz+1) = rhs(i,j,nz,1)*rhoE(nz+1)
+      tmpz(1)    = rhs(i,j,1,1)
+      tmpz(nz+1) = rhs(i,j,nz,1)
 
       DO k=1,nz
-        rhs(i,j,k,3) = 0.5*(tmpz(k) + tmpz(k+1))
+        rhs(i,j,k,3) = 0.5*(tmpz(k) + tmpz(k+1)) 
         rhs(i,j,k,4) = rhs(i,j,k,3) + rhs(i,j,k,1)
       ENDDO
 
@@ -330,15 +328,15 @@
 
 ! Write data to netCDF-format file:
 
-    write(*,*) 'GETPP:  Before writenc2'
+    write(*,*) 'TEST_PB:  Before writenc2'
 
     call writenc2(outfile, nx, ny, nz, nv, rhs, var_names)
 
-    write(*,*) 'GETPP:  After writenc2'
+    write(*,*) 'TEST_PB:  After writenc2'
 
-    END PROGRAM TEST_Pb
+    END PROGRAM TEST_PB
 
-!=================== Write netCDF ==========================
+!=================== Write netCDF2 ==========================
 
     subroutine writenc2(filename, nx, ny, nz, nv, vars, labels)
 

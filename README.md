@@ -4,6 +4,7 @@
 
 # Contents
 
+<<<<<<< HEAD
 1. GENERAL DESCRIPTION
 2. IMPORTANT NOTES
 3. HOW TO RUN
@@ -15,6 +16,9 @@
 in CM1, but it is not set up for runs using distributed memory (the majority of CM1 simulations). 
 
 - The code has been reoganized by Lou Wicker starting in summer of 2024. Closer attention has been paid to the buoyant pressure retrieval code. Over the years and through various users, incorrect vertical boundary conditions crept into the specification tridiagonal solution for buoyany pressure.  The maximum effect from this creates solution errors near the lower and upper boundaries.  The dynamic forcing appeared to have the correct vertical boundary condition.
+=======
+Contents:
+>>>>>>> main
 
 - The buoyant pressure retrieval has been correctly and carefully compared to the idealized buoyant forcing tests described in:
 
@@ -32,6 +36,7 @@ in CM1, but it is not set up for runs using distributed memory (the majority of 
 
 #
 
+<<<<<<< HEAD
 2. IMPORTANT NOTES
 - Program is currently set up to read/write netcdf output. Original
   program only read/write grads.
@@ -58,16 +63,51 @@ in CM1, but it is not set up for runs using distributed memory (the majority of 
   subdomain (hard set variables avgstart,avglen). It's recommended to do the
   averaging over as large a subdomain as possible to ensure that it is
   representative of this new base state.
+=======
+How to compile PDcomp 
+>>>>>>> main
 
 #
 
-3. BEFORE YOU RUN:
-- Modify range of desired CM1 output times to perform analysis in run_pdcomp.bash
-- Modify the filepaths in the def.pdcomp.input file and run_pdcomp.bash script
-  to reflect your pdcomp and CM1 output directories.
-- If not already done, make sure to set the LD_LIBRARY_PATH environment
-  variable within your .bashrc (or whatever is relevant for the shell
-  your machine is using).
-- In the run directory, create a symbolic link to the netcdf.mod module file
-  on your machine.
+It might be easiest to install the hpc conda environment.  I use this environment for a number of projects,
+one can compile CM1 using it as Openmpi is also available.  The file "gcc.env" in this directory is included in the src/Makefile to help specify the fortran commands (debug or otherwise) and the netCDF libs.
 
+<<<<<<< HEAD
+=======
+Installation Using Conda Procedure
+----------------------------------
+
+To install the hpc environment into your conda system, type:
+
+"conda env create -f hpc.yml"
+
+If that works, then go into the environment"
+
+"conda activate hpc"
+
+and you should now be able to compile (one more thing):
+
+I assume you are using miniconda3 for your python environment - if so - and if your miniconda3 is located at
+
+${HOME}/miniconda3
+
+then the gcc.env will work.  
+
+If not, but the "hpc" is installed, please edit the gcc.env to point to the conda install directory, 
+
+${HOME}/your_conda_install
+
+in the gcc.env file.
+
+Installation Using Linux Sys
+----------------------------
+
+Edit the gcc.env file to where the include and libs are for netCDF4, e.g., edit the 
+
+OUTPUTINC = 
+
+LINKOPTS = 
+
+macro definitions, as these are the ones used by the Makefile.  
+
+>>>>>>> main

@@ -317,3 +317,78 @@
 
     RETURN
     END SUBROUTINE READ_NC4_ATT
+
+!=================== Write netCDF2 ==========================
+
+    subroutine writenc2(filename, nx, ny, nz, nv, vars, labels)
+
+    USE netcdf
+
+    implicit none
+ 
+    character(len=*),          intent(in) :: filename
+    integer,                   intent(in) :: nx, ny, nz, nv
+
+    real, dimension(nx,ny,nz,nv), intent(in) :: vars
+
+    character(len=10), dimension(nv), intent(in) :: labels
+
+! Local declarations
+
+    integer :: n
+
+    integer :: ncid,status,niDimID,njDimID,nkDimID,timeDimID
+
+    integer, dimension(nv) :: VarID
+
+    real, dimension(nx,ny,nz) :: tmp
+
+!----------------- Create and open netCDF -----------------
+
+    status = nf90_create(trim(filename),NF90_64BIT_OFFSET,ncid)
+
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+!------------ Define dimensions and variables -------------
+
+    status = nf90_def_dim(ncid,"nx",nx,niDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+    
+    status = nf90_def_dim(ncid,"ny",ny,njDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    status = nf90_def_dim(ncid,"nz",nz,nkDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    status = nf90_def_dim(ncid,"time",1,timeDimID)
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    DO n = 1,nv
+
+      status = nf90_def_var(ncid,labels(n),nf90_float, &
+                           (/niDimID,njDimID,nkDimID/),VarID(n))
+                       !   (/niDimID,njDimID,nkDimID,timeDimID/),VarID(n))
+      if(status /= nf90_NoErr) write(*,*) labels(n), nf90_strerror(status)
+
+    ENDDO
+
+    status = nf90_enddef(ncid)
+
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+!------------ Write dimensions and variables -------------
+    DO n = 1,nv
+
+      tmp(:,:,:) = vars(:,:,:,n)
+
+      status = nf90_put_var(ncid, VarID(n), tmp)
+      if(status /= nf90_NoErr) write(*,*) labels(n), nf90_strerror(status)
+
+    ENDDO
+
+    status = nf90_close(ncid)
+
+    if(status /= nf90_NoErr) write(*,*) nf90_strerror(status)
+
+    return
+    end

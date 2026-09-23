@@ -72,6 +72,15 @@
 
     narg = 0
 
+    IF ( command_argument_count() < 4 ) THEN
+
+     write(*,*) ' ----> Error, not enough command line args'
+     write(*,*) ' ----> Usage:'
+     write(*,*) ' ----> retrievebeta.exe -i input.ncdf -o output.ncdf:'
+     STOP
+
+    ENDIF
+
     do while ( narg  <  command_argument_count() )
 
         narg = narg + 1

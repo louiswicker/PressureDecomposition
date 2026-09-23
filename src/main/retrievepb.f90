@@ -70,6 +70,15 @@
 
     write(*,*) ' ---> Retrieve_PressureBuoy: Parsing Command Line arguments'
 
+    IF ( command_argument_count() < 4 ) THEN
+
+     write(*,*) ' ----> Error, not enough command line args'
+     write(*,*) ' ----> Usage:'
+     write(*,*) ' ----> retrievepb.exe -i input.ncdf -o output.ncdf:'
+     STOP
+
+    ENDIF
+
     narg = 0
 
     do while ( narg  <  command_argument_count() )

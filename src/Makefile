@@ -16,7 +16,7 @@ F90=mpif90
 FFTWINC=-I/usr/include # location of include files for fftw
 FFTWLIB=-L/usr/local/lib64 # location of libraries for fftw
 
-include gcc.site
+include ../gcc.env
 
 NCINC=${OUTPUTINC}
 NCLIB=${LINKOPTS}
@@ -34,6 +34,8 @@ FOPTS = -g -O0 -fbacktrace -fcheck=all -w -Wall -Wno-unused-parameter
 FOPTS = -O2 -fcheck=bounds -Wno-unused-parameter 
 
 #################################################################################
+
+all:	retrievepb retrievebeta testbeta testpb
 
 retrievepb:   $(OBFILES) retrievepb.o
 		$(F90) $(FOPTS) -o retrievepb.exe retrievepb.o $(OBFILES) $(FFTWINC) $(FFTWLIB) $(NCLIB) -lm $(LINKOPTS)
